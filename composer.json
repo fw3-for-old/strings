@@ -1,0 +1,35 @@
+{
+    "name" : "fw3_for_old/strings",
+    "description" : "Flywheel3 framework: string processing library for old php versions",
+    "type" : "library",
+    "homepage" : "https://ickx.jp",
+    "license" : "MIT",
+    "authors" : [{
+            "name" : "akira wakaba",
+            "homepage" : "https://ickx.jp",
+            "role" : "lead developer"
+        }
+    ],
+    "config" : {
+        "autoloader-suffix" : "IckxFw3ForOldStrings"
+    },
+    "autoload" : {
+        "psr-4" : {
+            "fw3_for_old\\strings\\" : "./src/"
+        }
+    },
+    "autoload-dev" : {
+        "psr-4" : {
+            "fw3_for_old\\tests\\strings\\" : "./tests/",
+            "fw3_for_old\\ez_test\\" : "./tests/fw3_for_old/ez_test/src/"
+        }
+    },
+    "keywords" : [
+        "fw3 Flywheel3 string processing"
+    ],
+    "require" : {
+        "php": ">=5.3.3",
+        "ext-mbstring" : "*",
+        "fw3_for_old/ez_test" : ">=1.0.0"
+    }
+}
