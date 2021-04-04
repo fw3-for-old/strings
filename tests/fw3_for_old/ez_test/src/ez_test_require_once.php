@@ -19,5 +19,7 @@
  * ez_test関連ファイル一括読み込み
  */
 require_once sprintf('%s/TestRunner.php', __DIR__);
+require_once sprintf('%s/reflectors/ReflectionTestObject.php', __DIR__);
+require_once sprintf('%s/reflectors/ReflectionTestMethod.php', __DIR__);
 require_once sprintf('%s/test_unit/TestInterface.php', __DIR__);
 require_once sprintf('%s/test_unit/AbstractTest.php', __DIR__);

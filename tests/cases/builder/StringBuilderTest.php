@@ -9,60 +9,19 @@ use fw3_for_old\strings\builder\modifiers\security\EscapeModifier;
 use fw3_for_old\strings\builder\traits\converter\AbstractConverter;
 use fw3_for_old\strings\converter\Convert;
 
-/**
- * @runTestsInSeparateProcesses
- */
 class StringBuilderTest extends AbstractTest
 {
     protected $internalEncoding = null;
 
-    public function setUp()
+    public function initialize()
     {
-        parent::setUp();
-
         $this->internalEncoding = mb_internal_encoding();
         mb_internal_encoding('UTF-8');
     }
 
-    public function tearDown()
+    public function finalize()
     {
         mb_internal_encoding($this->internalEncoding);
-
-        parent::tearDown();
-    }
-
-    public function init()
-    {
-        $clear_targets  = array(
-            array('instanceCache', array()),
-            array('defaultValues', array()),
-            array('defaultConverter', null),
-            array('defaultCharacterEncoding', StringBuilder::DEFAULT_CHARACTER_ENCODING),
-            array('defaultEnclosureBegin', StringBuilder::DEFAULT_ENCLOSURE_BEGIN),
-            array('defaultEnclosureEnd', StringBuilder::DEFAULT_ENCLOSURE_END),
-            array('defaultNameSeparator', StringBuilder::DEFAULT_NAME_SEPARATOR),
-            array('defaultModifierSeparator', StringBuilder::DEFAULT_MODIFIER_SEPARATOR),
-            array('defaultModifierSet', array(
-                // datetime
-                'date'          => "\\fw3_for_old\\strings\\builder\\modifiers\\datetime\\DateModifier",
-                'strtotime'     => "\\fw3_for_old\\strings\\builder\\modifiers\\datetime\\StrtotimeModifier",
-                // security
-                'escape'        => "\\fw3_for_old\\strings\\builder\\modifiers\\security\\EscapeModifier",
-                'e'             => "\\fw3_for_old\\strings\\builder\\modifiers\\security\\EscapeModifier",
-                // text
-                'to_debug'          => "\\fw3_for_old\\strings\\builder\\modifiers\\strings\\ToDebugStringModifier",
-                'to_debug_str'      => "\\fw3_for_old\\strings\\builder\\modifiers\\strings\\ToDebugStringModifier",
-                'to_debug_string'   => "\\fw3_for_old\\strings\\builder\\modifiers\\strings\\ToDebugStringModifier",
-            )),
-            array('defaultSubstitute', StringBuilder::DEFAULT_SUBSTITUTE),
-        );
-
-        $rc = new \ReflectionClass("\\fw3_for_old\\strings\\builder\\StringBuilder");
-        foreach ($clear_targets as $target) {
-            $rp = $rc->getProperty($target[0]);
-            $rp->setAccessible(true);
-            $rp->setValue($target[1]);
-        }
     }
 
     public function testBuild()
@@ -403,6 +362,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testDefaultEnclosure()
     {
         //==============================================
@@ -478,6 +440,9 @@ class StringBuilderTest extends AbstractTest
         );
     }
 
+    /**
+     * @processFork
+     */
     public function testDefaultEnclosureBeginException()
     {
         StringBuilder::defaultSubstitute('■');
@@ -488,12 +453,15 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::defaultEnclosure(array($value, '}'));
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($e, $message);
-                $this->expectException($e, "\\InvalidArgumentException");
+                $this->expectExceptionMessage($message, $e);
+                $this->expectException("\\InvalidArgumentException", $e);
             }
         }
     }
 
+    /**
+     * @processFork
+     */
     public function testDefaultEnclosureEndExceptionDataProvider()
     {
         StringBuilder::defaultSubstitute('■');
@@ -504,12 +472,15 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::defaultEnclosure(array('{:', $value));
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($e, $message);
-                $this->expectException($e, "\\InvalidArgumentException");
+                $this->expectExceptionMessage($message, $e);
+                $this->expectException("\\InvalidArgumentException", $e);
             }
         }
     }
 
+    /**
+     * @processFork
+     */
     public function testDefaultEnclosureBegin()
     {
         //==============================================
@@ -548,6 +519,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testSetDefaultValue()
     {
         //==============================================
@@ -583,6 +557,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testDefaultEnclosureEnd()
     {
         //==============================================
@@ -710,12 +687,15 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::defaultNameSeparator($value);
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($e, $message);
-                $this->expectException($e, $exception_class);
+                $this->expectExceptionMessage($message, $e);
+                $this->expectException($exception_class, $e);
             }
         }
     }
 
+    /**
+     * @processFork
+     */
     public function testDefaultModifierSeparator()
     {
         //==============================================
@@ -797,13 +777,16 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::defaultModifierSeparator($value);
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($e, $message);
-                $this->expectException($e, $exception_class);
+                $this->expectExceptionMessage($message, $e);
+                $this->expectException($exception_class, $e);
             }
         }
 
     }
 
+    /**
+     * @processFork
+     */
     public function testDefaultModifierSet()
     {
         //==============================================
@@ -868,6 +851,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testDefaultSubstitute()
     {
         //==============================================
@@ -939,6 +925,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testDefaultValues()
     {
         //==============================================
@@ -1047,6 +1036,9 @@ class StringBuilderTest extends AbstractTest
         );
     }
 
+    /**
+     * @processFork
+     */
     public function testEnclosureBeginException()
     {
         StringBuilder::defaultSubstitute('■');
@@ -1057,12 +1049,15 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::factory()->enclosure(array($value, '}'));
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($e, $message);
-                $this->expectException($e, $exception_class);
+                $this->expectExceptionMessage($message, $e);
+                $this->expectException($exception_class, $e);
             }
         }
     }
 
+    /**
+     * @processFork
+     */
     public function testEnclosureEndExceptionDataProvider()
     {
         StringBuilder::defaultSubstitute('■');
@@ -1073,12 +1068,15 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::factory()->enclosure(array('{:', $value));
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($e, $message);
-                $this->expectException($e, $exception_class);
+                $this->expectExceptionMessage($message, $e);
+                $this->expectException($exception_class, $e);
             }
         }
     }
 
+    /**
+     * @processFork
+     */
     public function testEnclosureBegin()
     {
         //==============================================
@@ -1115,6 +1113,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testEnclosureEnd()
     {
         //==============================================
@@ -1152,6 +1153,9 @@ class StringBuilderTest extends AbstractTest
 
     }
 
+    /**
+     * @processFork
+     */
     public function testFactory()
     {
         //==============================================
@@ -1190,6 +1194,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testGet()
     {
         //==============================================
@@ -1242,8 +1249,7 @@ class StringBuilderTest extends AbstractTest
     }
 
     /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disable
+     * @processFork
      */
     public function testNameSeparator()
     {
@@ -1331,12 +1337,15 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::factory()->nameSeparator($value);
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($e, $message);
-                $this->expectException($e, $exception_class);
+                $this->expectExceptionMessage($message, $e);
+                $this->expectException($exception_class, $e);
             }
         }
     }
 
+    /**
+     * @processFork
+     */
     public function testModifierSeparator()
     {
         //==============================================
@@ -1415,12 +1424,15 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::factory()->modifierSeparator($value);
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($e, $message);
-                $this->expectException($e, $exception_class);
+                $this->expectExceptionMessage($message, $e);
+                $this->expectException($exception_class, $e);
             }
         }
     }
 
+    /**
+     * @processFork
+     */
     public function testModifierSet()
     {
         //==============================================
@@ -1485,6 +1497,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testModify()
     {
         //==============================================
@@ -1567,8 +1582,8 @@ class StringBuilderTest extends AbstractTest
             StringBuilder::remove(StringBuilder::DEFAULT_NAME);
             StringBuilder::get();
         } catch (\Exception $e) {
-            $this->expectExceptionMessage($e, $message);
-            $this->expectException($e, $exception_class);
+            $this->expectExceptionMessage($message, $e);
+            $this->expectException($exception_class, $e);
         }
     }
 
@@ -1583,8 +1598,8 @@ class StringBuilderTest extends AbstractTest
             StringBuilder::remove('a1');
             StringBuilder::get('a1');
         } catch (\Exception $e) {
-            $this->expectExceptionMessage($e, $message);
-            $this->expectException($e, $exception_class);
+            $this->expectExceptionMessage($message, $e);
+            $this->expectException($exception_class, $e);
         }
     }
 
@@ -1619,6 +1634,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testRemoveDefaultValue()
     {
         //----------------------------------------------
@@ -1675,6 +1693,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testRemoveValue()
     {
         //----------------------------------------------
@@ -1922,6 +1943,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testSubstitute()
     {
         //==============================================
@@ -1981,6 +2005,9 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @processFork
+     */
     public function testValues()
     {
         //==============================================

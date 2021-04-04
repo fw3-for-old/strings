@@ -146,7 +146,7 @@ abstract class AbstractTest implements TestInterface
      */
     protected function expectException($expected, $actual)
     {
-        $this->log($expected instanceof $actual, $expected, $actual);
+        $this->log($actual instanceof $expected, $expected, $actual);
     }
 
     /**
@@ -157,7 +157,7 @@ abstract class AbstractTest implements TestInterface
      */
     protected function expectExceptionMessage($expected, $actual)
     {
-        $this->log($actual === $expected->getMessage(), $expected, $actual);
+        $this->log($actual->getMessage() === $expected, $expected, $actual);
     }
 
     /**
@@ -386,39 +386,61 @@ abstract class AbstractTest implements TestInterface
     }
 
     /**
-     * セットアップ
+     * ログをmergeします。
+     *
+     * @param   array   $logs   ログ
+     * @return  AbstractTest    このインスタンス
      */
-    protected function setup()
+    public function mergeLogs($logs)
     {
-    }
-
-    /**
-     * テスト一括実行器
-     */
-    public function test()
-    {
-        $this->setup();
-
-        $rc = new \ReflectionClass($this);
-
-        $init       = $rc->hasMethod('init') ? $rc->getMethod('init') : null;
-        $cleanUp    = $rc->hasMethod('cleanUp') ? $rc->getMethod('cleanUp') : null;
-
-        foreach ($rc->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-            if ($method->name !== 'test' && \substr($method->name, 0, 4) === 'test') {
-                $init === null ?: $init->invoke($this);
-                $method->invoke($this);
-                $cleanUp === null ?: $cleanUp->invoke($this);
+        foreach ($logs as $status => $log) {
+            foreach ($log as $detail) {
+                $this->logs[$status][] = $detail;
             }
         }
-
-        $this->tearDown();
+        return $this;
     }
 
     /**
-     * ティアダウン
+     * 同一プロセス中で一度だけ実行される初期化処理
      */
-    protected function teardown()
+    public function initialize()
+    {
+    }
+
+    /**
+     * テストクラスセットアップ
+     */
+    public function setupTestClass()
+    {
+    }
+
+    /**
+     * テストセットアップ
+     */
+    public function setupTest()
+    {
+    }
+
+    /**
+     * テストティアダウン
+     */
+    public function teardownTest()
+    {
+    }
+
+    /**
+     * テストクラスティアダウン
+     */
+    public function teardownTestClass()
+    {
+    }
+
+
+    /**
+     * 同一プロセス中で一度だけ実行される終了処理
+     */
+    public function finalize()
     {
     }
 }

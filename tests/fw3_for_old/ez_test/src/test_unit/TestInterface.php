@@ -28,9 +28,4 @@ interface TestInterface
      * @return  array   現在までに保存されたログ
      */
     public function getLogs();
-
-    /**
-     * * テスト一括実行器
-     */
-    public function test();
 }

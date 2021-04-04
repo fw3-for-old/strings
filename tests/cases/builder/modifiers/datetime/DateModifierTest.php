@@ -22,7 +22,6 @@ use fw3_for_old\strings\builder\modifiers\datetime\DateModifier;
 
 class DateModifierTest extends AbstractTest
 {
-
     public function testModify()
     {
         $base_ts    = strtotime('2020-01-01 00:00:00');

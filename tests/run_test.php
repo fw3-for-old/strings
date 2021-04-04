@@ -25,4 +25,6 @@ require_once sprintf('%s/src/strings_require_once.php', \dirname(__DIR__));
 // test runner
 require_once \sprintf('%s/fw3_for_old/ez_test/src/ez_test_require_once.php', __DIR__);
 
-TestRunner::factory()->run();
+return TestRunner::factory(array(
+    'php_binary_path'   => "C:/php/5.3.3/php.exe",
+))->run()->getExitStatus();
