@@ -47,6 +47,11 @@ class Convert
     const ESCAPE_TYPE_JS            = 'javascript';
 
     /**
+     * @const   string  エスケープタイプ：シェル引数
+     */
+    const ESCAPE_TYPE_SHELL         = 'shell';
+
+    /**
      * @const   int     基底となるエスケープフラグ
      */
     const BASE_ESCAPE_FLAGS         =  ENT_QUOTES;
@@ -55,6 +60,15 @@ class Convert
      * @const   int     HTML関連のエスケープフラグ
      */
     public static $HTML_ESCAPE_FLAGS    = array(
+    );
+
+    /**
+     * @var array   エスケープタイプマップ
+     */
+    public static $ESCAPE_TYPE_MAP  = array(
+        self::ESCAPE_TYPE_HTML          => self::ESCAPE_TYPE_HTML,
+        self::ESCAPE_TYPE_JAVASCRIPT    => self::ESCAPE_TYPE_JAVASCRIPT,
+        self::ESCAPE_TYPE_SHELL         => self::ESCAPE_TYPE_SHELL,
     );
 
     /**
@@ -246,6 +260,17 @@ class Convert
     // escape
     //----------------------------------------------
     /**
+     * 利用可能なエスケープタイプか検証します。
+     *
+     * @param   string  $escape_type    検証するエスケープタイプ
+     * @return  bool    利用可能なエスケープタイプかどうか
+     */
+    public static function validEscapeType($escape_type)
+    {
+        return isset(static::$ESCAPE_TYPE_MAP[$escape_type]);
+    }
+
+    /**
      * 文字列のエスケープを行います。
      *
      * @param   string      $value      エスケープする文字列
@@ -262,6 +287,8 @@ class Convert
             return static::jsEscape($value, $options, $encoding);
         } elseif ($type === static::ESCAPE_TYPE_JS) {
             return static::jsEscape($value, $options, $encoding);
+        } elseif ($type === static::ESCAPE_TYPE_SHELL) {
+            return static::shellEscape($value, $options, $encoding);
         }
 
         return $value;
@@ -394,6 +421,28 @@ class Convert
     public static function toJson($value, $depth = 512)
     {
         return json_encode($value, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    }
+
+    //----------------------------------------------
+    // shell
+    //----------------------------------------------
+    /**
+     * シェル引数のエスケープを行います。
+     *
+     * @param   string      $value      エスケープするシェル引数
+     * @param   array       $options    オプション
+     * @param   string|null $encoding   エンコーディング
+     * @return  string  エスケープされたHTML文字列
+     */
+    public static function shellEscape($value, array $options = array(), $encoding = null)
+    {
+        $encoding   = isset($encoding) ? $encoding : mb_internal_encoding();
+
+        if (!mb_check_encoding($value, $encoding)) {
+            throw new InvalidArgumentException(sprintf('不正なエンコーディングが検出されました。encoding:%s, value_encoding:%s', Convert::toDebugString(isset($encoding) ? $encoding : mb_internal_encoding()), Convert::toDebugString(mb_detect_encoding($value, static::$DETECT_ENCODING_ORDER, true))));
+        }
+
+        return escapeshellarg($value);
     }
 
     //----------------------------------------------

@@ -208,6 +208,8 @@ class TestRunner
             $instance->targetTestMethod = $cli_options['method'];
 
             $instance->stdOutMode(static::STD_OUT_MODE_JSON);
+        } elseif ($instance->isExecModeApi()) {
+            $instance->stdOutMode(static::STD_OUT_MODE_JSON);
         }
 
         return $instance;
@@ -236,8 +238,7 @@ class TestRunner
         }
 
         ob_start();
-        $test_case_paths    = $this->pickupTestCase();
-        $result             = $this->test($test_case_paths);
+        $logs               = $this->test($this->pickupTestCase());
 
         $end_mts    = microtime(true);
         $end_time   = explode('.', $end_mts);
@@ -256,20 +257,33 @@ class TestRunner
             if ($std_out !== '') {
                 echo '================================================', \PHP_EOL;
                 echo ' std out.', \PHP_EOL;
-                echo '================================================';
+                echo '================================================', \PHP_EOL;
                 echo $std_out;
                 echo '================================================', \PHP_EOL;
                 echo \PHP_EOL;
             }
         }
 
-        $parsed_result  = $this->isExecModeProcessFork() ? $result : $this->resultParse($result);
+        $this->result = array(
+            'test_case_root_dir'    => $this->testCaseRootDir,
+            'time'                  => array(
+                'start_microtime'   => $this->startMicrotime,
+                'start_datetime'    => $start_time,
+                'end_microtime'     => $end_mts,
+                'end_datetime'      => $end_time,
+                'exec_time'         => $exec_time,
+            ),
+            'std_out'               => $std_out,
+            'logs'                  => $logs,
+        );
 
         if ($this->stdOutMode === self::STD_OUT_MODE_TEXT) {
-            $is_error       = $parsed_result['is_error'];
-            $success_total  = $parsed_result['success_total'];
-            $failed_total   = $parsed_result['failed_total'];
-            $detail_message = $parsed_result['detail_message'];
+            $parsed_logs    = static::logParse($logs);
+
+            $is_error       = $parsed_logs['is_error'];
+            $success_total  = $parsed_logs['success_total'];
+            $failed_total   = $parsed_logs['failed_total'];
+            $detail_message = $parsed_logs['detail_message'];
 
             echo '================================================', \PHP_EOL;
             echo \sprintf(' test result: %s (%s / %s)', $is_error ? 'failed' : 'success', $success_total, $success_total + $failed_total), \PHP_EOL;
@@ -285,22 +299,132 @@ class TestRunner
             echo '================================================', \PHP_EOL;
         }
 
-        $this->result   = array(
-            'time'  => array(
-                'start_microtime'   => $this->startMicrotime,
-                'start_datetime'    => $start_time,
-                'end_microtime'     => $end_mts,
-                'end_datetime'      => $end_time,
-                'exec_time'         => $exec_time,
-            ),
-            'log'   => $parsed_result,
-        );
-
         if ($this->stdOutMode === self::STD_OUT_MODE_JSON) {
             echo \json_encode($this->result, \JSON_HEX_TAG | \JSON_HEX_AMP | \JSON_HEX_APOS | \JSON_HEX_QUOT);
         }
 
         return $this;
+    }
+
+    /**
+     * テスト結果を元に表示を行います。
+     *
+     * 通常このメソッドは複数のテストをapiで実行した結果を纏めて表示する場合に使います。
+     *
+     * @param   array   $result テスト結果
+     */
+    public static function resultRender($result)
+    {
+        $test_case_root_dir = $result['test_case_root_dir'];
+
+        $time               = $result['time'];
+        $start_microtime    = $time['start_microtime'];
+        $start_time         = $time['start_datetime'];
+        $end_mts            = $time['end_microtime'];
+        $end_time           = $time['end_datetime'];
+        $exec_time          = $time['exec_time'];
+
+        echo '================================================', \PHP_EOL;
+        echo ' fw3_for_old/ez_test.', \PHP_EOL;
+        echo \sprintf(' target test cases => %s', $test_case_root_dir), \PHP_EOL;
+        echo '================================================', \PHP_EOL;
+        echo \sprintf(' start time  : %s', $start_time), \PHP_EOL;
+
+        echo \sprintf(' end time    : %s', $end_time), \PHP_EOL;
+        echo \sprintf(' exec time   : %ssec', $exec_time), \PHP_EOL;
+        echo '================================================', \PHP_EOL;
+        echo \PHP_EOL;
+
+        if (isset($result['std_out']) && $result['std_out'] !== '') {
+            echo '================================================', \PHP_EOL;
+            echo ' std out.', \PHP_EOL;
+            echo '================================================', \PHP_EOL;
+            echo $result['std_out'];
+            echo '================================================', \PHP_EOL;
+            echo \PHP_EOL;
+        }
+
+        $parsed_logs    = static::logParse($result['logs']);
+
+        $is_error       = $parsed_logs['is_error'];
+        $success_total  = $parsed_logs['success_total'];
+        $failed_total   = $parsed_logs['failed_total'];
+        $detail_message = $parsed_logs['detail_message'];
+
+        echo '================================================', \PHP_EOL;
+        echo \sprintf(' test result: %s (%s / %s)', $is_error ? 'failed' : 'success', $success_total, $success_total + $failed_total), \PHP_EOL;
+        echo '------------------------------------------------', \PHP_EOL;
+        echo ' details', \PHP_EOL;
+        echo '------------------------------------------------', \PHP_EOL;
+        echo \implode(\PHP_EOL, $detail_message), \PHP_EOL;
+        echo '================================================', \PHP_EOL;
+        echo \PHP_EOL;
+
+        echo '================================================', \PHP_EOL;
+        echo ' test has been finished.', \PHP_EOL;
+        echo '================================================', \PHP_EOL;
+    }
+
+    /**
+     * 複数のテストをAPIとして呼び出した場合の結果をレンダリング可能な形に変換して返します。
+     *
+     * @param   array   $multi_api_results  複数のテストをAPIとして呼び出した場合の結果
+     * @return  array   static::resultRenderで利用できる形式のデータ
+     */
+    public static function convertMultiApiResultForResultRender($multi_api_results)
+    {
+        $test_case_root_dir = array();
+
+        $start_microtime    = array();
+        $start_datetime     = array();
+        $end_microtime      = array();
+        $end_datetime       = array();
+        $exec_time          = array();
+
+        $std_out    = array();
+
+        $logs   = array();
+
+        foreach ($multi_api_results as $result) {
+            $test_case_root_dir[]   = $result['test_case_root_dir'];
+
+            $time   = $result['time'];
+            $start_microtime[]  = $time['start_microtime'];
+            $start_datetime[]   = $time['start_datetime'];
+            $end_microtime[]    = $time['end_microtime'];
+            $end_datetime[]     = $time['end_datetime'];
+            $exec_time[]        = $time['exec_time'];
+
+            if (isset($result['std_out']) && $result['std_out'] !== '') {
+                $std_out[]  = $result['std_out'];
+            }
+
+            foreach ($result['logs'] as $test_case => $log) {
+                foreach ($log as $status => $messages) {
+                    foreach ($messages as $set) {
+                        $logs[$test_case][$status][]    = $set;
+                    }
+                }
+            }
+        }
+
+        sort($start_microtime);
+        sort($start_datetime);
+        sort($end_microtime);
+        sort($end_datetime);
+
+        return array(
+            'test_case_root_dir'    => implode(\PHP_EOL, $test_case_root_dir),
+            'time'                  => array(
+                'start_microtime'   => reset($start_microtime),
+                'start_datetime'    => reset($start_datetime),
+                'end_microtime'     => end($end_microtime),
+                'end_datetime'      => end($end_datetime),
+                'exec_time'         => array_sum($exec_time),
+            ),
+            'std_out'               => !empty($std_out) ? implode(\PHP_EOL, $std_out) : null,
+            'logs'                  => $logs,
+        );
     }
 
     /**
@@ -311,6 +435,16 @@ class TestRunner
     public function getExitStatus()
     {
         return isset($this->result['log']['is_error']) && $this->result['log']['is_error'] === false ? 0 : 1;
+    }
+
+    /**
+     * 現在の実行モードがAPIかどうかを返します。
+     *
+     * @return  bool    現在の実行モードがAPIかどうか
+     */
+    public function isExecModeApi()
+    {
+        return $this->execMode === static::EXEC_MODE_API;
     }
 
     /**
@@ -466,6 +600,10 @@ class TestRunner
                 continue;
             }
 
+            if ($test_class === 'fw3_for_old\ez_test\test_unit\AbstractTest') {
+                continue;
+            }
+
             /** @var AbstractTest $testClass */
             $testClass  = new $test_class();
             $testClass->initialize();
@@ -512,24 +650,27 @@ class TestRunner
                         throw new \Exception(sprintf('プロセスフォークモード時のクラス指定とメソッド指定が呼び出し元と同一です。target_class:%s, target_method:%s', $this->targetTestClass, $this->targetTestMethod));
                     }
 
-                    $command    = \sprintf(
+                    $command    = \sprintf('%s 2>&1', \escapeshellcmd(\sprintf(
                         '%s %s %s --mode %s --class %s --method %s',
-                        \escapeshellcmd($php_binary),
+                        \escapeshellarg($php_binary),
                         $php_ini_path,
                         \escapeshellarg($_SERVER['argv'][0]),
                         \escapeshellarg(static::EXEC_MODE_PROCESS_FORK),
                         \escapeshellarg($test_class),
                         \escapeshellarg($reflectionTestMethod->name)
-                    );
+                    )));
 
                     $output     = null;
                     $return_var = null;
-                    exec($command, $output, $return_var);
 
-                    if ($return_var === 0 && isset($output[0]) && false !== ($logs = json_decode($output[0], true))) {
-                        $testClass->mergeLogs($logs['log'][$test_class]);
+                    \exec($command, $output, $return_var);
+
+                    if ($return_var === 0 && isset($output[0]) && null !== ($logs = \json_decode($output[0], true))) {
+                        $testClass->mergeLogs($logs['logs'][$test_class]);
                     } else {
-                        throw new \Exception(sprintf('プロセスフォーク実行に失敗しました。command:%s', $command));
+                        $testClass->mergeLogs(array('error' => array(
+                            implode(\PHP_EOL, $output),
+                        )));
                     }
 
                     $need_teardown_test_class   = true;
@@ -548,6 +689,11 @@ class TestRunner
                 try {
                     $testClass->{$reflectionTestMethod->name}();
                 } catch (\Exception $e) {
+                    if ($testClass->hasPreparedException()) {
+                        $testClass->assertPreparedException($e);
+                    } else {
+                        throw $e;
+                    }
                 }
 
                 $testClass->teardownTest();
@@ -578,50 +724,87 @@ class TestRunner
     }
 
     /**
-     * テスト結果を解析します。
+     * テストログを解析します。
      *
-     * @param   array   $result テスト結果
+     * @param   array   $logs   テストログ
      */
-    protected function resultParse($result)
+    protected static function logParse($logs)
     {
         $success_total  = 0;
         $failed_total   = 0;
+        $error_total    = 0;
 
         $detail_message = array();
-        $is_error       = false;
 
-        foreach ($result as $class => $test_result) {
-            $success    = count($test_result['success']);
-            $failed     = count($test_result['failed']);
-            $total      = $success + $failed;
+        foreach ($logs as $class => $test_log) {
+            $success_count    = !empty($test_log['success']) ? count($test_log['success']) : 0;
+            $failed_count     = !empty($test_log['failed']) ? count($test_log['failed']) : 0;
+            $error_count      = !empty($test_log['error']) ? count($test_log['error']) : 0;
+            $total              = $success_count + $failed_count + $error_count;
 
-            $success_total  += $success;
-            $failed_total   += $failed;
+            $success_total  += $success_count;
+            $failed_total   += $failed_count;
+            $error_total    += $error_count;
 
-            if ($failed > 0) {
-                $is_error = true;
+            $is_error   = $failed_count !== 0 || $error_count !== 0;
+
+            $message    = array();
+
+            if ($is_error) {
+                $message[]  = '------------------------------------------------';
             }
 
-            $message    = array(
-                \sprintf('  test class:%s (%s / %s)', $class, $success, $total),
+            $message[]  = \sprintf(
+                '  test %s: %s / %s%s => %s',
+                $is_error ? 'failed ' : 'success',
+                $success_count,
+                $total,
+                $is_error ? \sprintf(' (PHP Error: %s, failed: %s)', $error_count, $failed_count) : '',
+                $class
             );
 
-            foreach ($test_result['failed'] as $failed) {
-                $expected   = static::toText($failed['expected'], 999);
-                $actual     = static::toText($failed['actual'], 999);
+            $error_message  = array();
 
-                $message[]    = \sprintf('    %s', $failed['backtrace']);
-                $message[]    = \sprintf('      expected: %s', $expected);
-                $message[]    = \sprintf('      actual:   %s', $actual);
+            if (!empty($test_log['error'])) {
+                $error_message[]  = \sprintf('    PHP Error details => %s', $class);
+
+                foreach ($test_log['error'] as $idx => $error) {
+                    $error_message[]    = '';
+                    $error_message[]    = sprintf('      #%d %s', $idx, trim($error));
+                }
             }
 
-            $detail_message[]   = \implode(\PHP_EOL, $message);
+            if (!empty($test_log['failed'])) {
+                if (!empty($error_message)) {
+                    $error_message[]    = '';
+                    $error_message[]  = '------------------------------------------------';
+                }
+
+                $error_message[]    = \sprintf('    test failed details => %s', $class);
+
+                foreach ($test_log['failed'] as $idx => $failed) {
+                    $expected   = static::toText($failed['expected'], 999);
+                    $actual     = static::toText($failed['actual'], 999);
+
+                    $error_message[]    = '';
+                    $error_message[]    = \sprintf('      #%d %s', $idx, $failed['backtrace']);
+                    $error_message[]    = \sprintf('        expected: %s', $expected);
+                    $error_message[]    = \sprintf('        actual:   %s', $actual);
+                }
+            }
+
+            if ($is_error) {
+                $error_message[]  = '------------------------------------------------';
+            }
+
+            $detail_message[]   = \implode(\PHP_EOL, array_merge($message, $error_message));
         }
 
         return array(
             'detail_message'    => $detail_message,
             'success_total'     => $success_total,
             'failed_total'      => $failed_total,
+            'error_total'       => $error_total,
             'is_error'          => $is_error,
         );
     }

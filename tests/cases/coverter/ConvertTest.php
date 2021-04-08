@@ -117,12 +117,10 @@ class ConvertTest extends AbstractTest
         $value      = '<a href="#id" tar' . "\xff" . 'get=\'_blank\'>';
         $message    = '不正なエンコーディングが検出されました。encoding:\'UTF-8\', value_encoding:false';
 
-        try {
-            Convert::htmlEscape($value);
-        } catch (\Exception $e) {
-            $this->expectException("\\InvalidArgumentException", $e);
-            $this->expectExceptionMessage($message, $e);
-        }
+        $this->assertException("\\InvalidArgumentException");
+        $this->assertExceptionMessage($message);
+
+        Convert::htmlEscape($value);
     }
 
     public function testHtmlEscapeIllegalSequence002()
@@ -131,12 +129,10 @@ class ConvertTest extends AbstractTest
         $value      = 'あああああああああ';
         $message    = '不正なエンコーディングが検出されました。encoding:\'SJIS-win\', value_encoding:\'UTF-8\'';
 
-        try {
-            Convert::htmlEscape($value, array(), 'SJIS-win');
-        } catch (\Exception $e) {
-            $this->expectException("\\InvalidArgumentException", $e);
-            $this->expectExceptionMessage($message, $e);
-        }
+        $this->assertException("\\InvalidArgumentException");
+        $this->assertExceptionMessage($message);
+
+        Convert::htmlEscape($value, array(), 'SJIS-win');
     }
 
     public function testHtmlEscapeIllegalSequence003()
@@ -145,12 +141,10 @@ class ConvertTest extends AbstractTest
         $value      = 'あああああああああ';
         $message    = '不正なエンコーディングが検出されました。encoding:\'SJIS-win\', value_encoding:\'UTF-8\'';
 
-        try {
-            Convert::htmlEscape($value, array(), 'SJIS-win');
-        } catch (\Exception $e) {
-            $this->expectException("\\InvalidArgumentException", $e);
-            $this->expectExceptionMessage($message, $e);
-        }
+        $this->assertException("\\InvalidArgumentException");
+        $this->assertExceptionMessage($message);
+
+        Convert::htmlEscape($value, array(), 'SJIS-win');
     }
 
 
@@ -160,12 +154,10 @@ class ConvertTest extends AbstractTest
         $value      = mb_convert_encoding('あああああああああ', 'SJIS-win');
         $message    = '不正なエンコーディングが検出されました。encoding:\'UTF-8\', value_encoding:\'SJIS-win\'';
 
-        try {
-            Convert::htmlEscape($value);
-        } catch (\Exception $e) {
-            $this->expectException("\\InvalidArgumentException", $e);
-            $this->expectExceptionMessage($message, $e);
-        }
+        $this->assertException("\\InvalidArgumentException");
+        $this->assertExceptionMessage($message);
+
+        Convert::htmlEscape($value);
     }
 
     public function testJsEscape()
@@ -240,8 +232,8 @@ class ConvertTest extends AbstractTest
         try {
             Convert::escape($value, Convert::ESCAPE_TYPE_HTML, array(), 'SJIS-win');
         } catch (\Exception $e) {
-            $this->expectException("\\InvalidArgumentException", $e);
-            $this->expectExceptionMessage($message, $e);
+            $this->assertException("\\InvalidArgumentException", $e);
+            $this->assertExceptionMessage($message, $e);
         }
 
         //----------------------------------------------
@@ -291,8 +283,8 @@ class ConvertTest extends AbstractTest
             try {
                 Convert::escape($value, Convert::ESCAPE_TYPE_HTML, array(), $encoding);
             } catch (\Exception $e) {
-                $this->expectException("\\InvalidArgumentException", $e);
-                $this->expectExceptionMessage($message, $e);
+                $this->assertException("\\InvalidArgumentException", $e);
+                $this->assertExceptionMessage($message, $e);
             }
         }
     }

@@ -19,10 +19,7 @@
 namespace fw3_for_old\strings\builder;
 
 use fw3_for_old\strings\builder\modifiers\ModifierInterface;
-use fw3_for_old\strings\builder\modifiers\datetime\DateModifier;
-use fw3_for_old\strings\builder\modifiers\datetime\StrtotimeModifier;
 use fw3_for_old\strings\builder\modifiers\security\EscapeModifier;
-use fw3_for_old\strings\builder\modifiers\strings\ToDebugStringModifier;
 use fw3_for_old\strings\builder\traits\converter\ConverterInterface;
 use fw3_for_old\strings\converter\Convert;
 use Closure;
@@ -66,6 +63,26 @@ class StringBuilder
      * @const   string  修飾子セパレータのデフォルト値
      */
     const DEFAULT_MODIFIER_SEPARATOR    = '|';
+
+    /**
+     * @const   string  エスケープタイプ：HTML
+     */
+    const ESCAPE_TYPE_HTML          = Convert::ESCAPE_TYPE_HTML;
+
+    /**
+     * @const   string  エスケープタイプ：JavaScript
+     */
+    const ESCAPE_TYPE_JAVASCRIPT    = Convert::ESCAPE_TYPE_JAVASCRIPT;
+
+    /**
+     * @const   string  エスケープタイプ：JavaScript
+     */
+    const ESCAPE_TYPE_JS            = Convert::ESCAPE_TYPE_JS;
+
+    /**
+     * @const   string  エスケープタイプ：shell
+     */
+    const ESCAPE_TYPE_SHELL         = Convert::ESCAPE_TYPE_SHELL;
 
     /**
      * @const   array   修飾子セット
@@ -174,6 +191,31 @@ class StringBuilder
      */
     protected static $defaultSubstitute  = self::DEFAULT_SUBSTITUTE;
 
+    /**
+     * @var bool    クラスデフォルトとしてエスケープするかどうか
+     */
+    protected static $defaultUseEscape  = false;
+
+    /**
+     * @var string  クラスデフォルトのエスケープタイプ
+     */
+    protected static $defaultEscapeType = Convert::ESCAPE_TYPE_HTML;
+
+    /**
+     * @var string  クラスデフォルトのメッセージ
+     */
+    protected static $defaultMessage    = 'メッセージが指定されていません。';
+
+    /**
+     * @var callable[]  クラスデフォルトのプレビルダ
+     */
+    protected static $defaultPreBuilder    = array();
+
+    /**
+     * @var callable[]  クラスデフォルトのポストビルダ
+     */
+    protected static $defaultPostBuilder   = array();
+
     //==============================================
     // properties
     //==============================================
@@ -248,6 +290,31 @@ class StringBuilder
      */
     protected $substitute    = self::DEFAULT_SUBSTITUTE;
 
+    /**
+     * @var bool    デフォルトでエスケープするかどうか
+     */
+    protected $useEscape;
+
+    /**
+     * @var string  デフォルトのエスケープタイプ
+     */
+    protected $escapeType;
+
+    /**
+     * @var string  未指定時のメッセージ
+     */
+    protected $message  = '';
+
+    /**
+     * @var callable[]  プレビルダ
+     */
+    protected $preBuilder   = array();
+
+    /**
+     * @var callable[]  ポストビルダ
+     */
+    protected $postBuilder  = array();
+
     //==============================================
     // factory methods
     //==============================================
@@ -280,6 +347,14 @@ class StringBuilder
         $this->modifierSet(isset($modifier_set) ? $modifier_set : static::$defaultModifierSet);
 
         $this->substitute(static::$defaultSubstitute);
+
+        $this->useEscape(static::$defaultUseEscape);
+        $this->escapeType(static::$defaultEscapeType);
+
+        $this->message(static::$defaultMessage);
+
+        $this->preBuilder(static::$defaultPreBuilder);
+        $this->postBuilder(static::$defaultPostBuilder);
     }
 
     /**
@@ -334,6 +409,92 @@ class StringBuilder
     //==============================================
     // static property accessors
     //==============================================
+    /**
+     * デフォルトの設定を纏めて設定・取得します。
+     *
+     * @param   array|null  $default_settings   デフォルトの設定
+     * @return  string|array    このクラスパスまたはデフォルトの設定
+     */
+    public static function defaultSettings($default_settings = null)
+    {
+        if (!is_array($default_settings)) {
+            return array(
+                'values'                => static::defaultValues(),
+                'converter'             => static::defaultConverter(),
+                'character_encodingg'   => static::defaultCharacterEncoding(),
+                'enclosure_start'       => static::defaultEnclosureBegin(),
+                'enclosure_end'         => static::defaultEnclosureEnd(),
+                'name_separator'        => static::defaultNameSeparator(),
+                'modifier_separator'    => static::defaultModifierSeparator(),
+                'modifier_set'          => static::defaultModifierSet(),
+                'substitute'            => static::defaultSubstitute(),
+                'use_escape'            => static::defaultUseEscape(),
+                'escape_type'           => static::defaultEscapeType(),
+                'message'               => static::defaultMessage(),
+                'pre_builder'           => static::defaultPreBuilder(),
+                'post_builder'          => static::defaultPostBuilder(),
+            );
+        }
+
+        if (isset($default_settings['values'])) {
+            static::defaultValues($default_settings['values']);
+        }
+
+        if (isset($default_settings['converter'])) {
+            static::defaultConverter($default_settings['converter']);
+        }
+
+        if (isset($default_settings['character_encodingg'])) {
+            static::defaultCharacterEncoding($default_settings['character_encodingg']);
+        }
+
+        if (isset($default_settings['enclosure_start'])) {
+            static::defaultEnclosureBegin($default_settings['enclosure_start']);
+        }
+
+        if (isset($default_settings['enclosure_end'])) {
+            static::defaultEnclosureEnd($default_settings['enclosure_end']);
+        }
+
+        if (isset($default_settings['name_separator'])) {
+            static::defaultNameSeparator($default_settings['name_separator']);
+        }
+
+        if (isset($default_settings['modifier_separator'])) {
+            static::defaultModifierSeparator($default_settings['modifier_separator']);
+        }
+
+        if (isset($default_settings['modifier_set'])) {
+            static::defaultModifierSet($default_settings['modifier_set']);
+        }
+
+        if (isset($default_settings['substitute'])) {
+            static::defaultSubstitute($default_settings['substitute']);
+        }
+
+        if (isset($default_settings['use_escape'])) {
+            static::defaultUseEscape($default_settings['use_escape']);
+        }
+
+        if (isset($default_settings['escape_type'])) {
+            static::defaultEscapeType($default_settings['escape_type']);
+        }
+
+        if (isset($default_settings['message'])) {
+            static::defaultMessage($default_settings['message']);
+        }
+
+        if (isset($default_settings['pre_builder'])) {
+            static::defaultPreBuilder($default_settings['pre_builder']);
+        }
+
+        if (isset($default_settings['post_builder'])) {
+            static::defaultPostBuilder($default_settings['post_builder']);
+        }
+
+        return get_called_class();
+    }
+
     /**
      * クラスデフォルトの変数値セットを設定・取得します。
      *
@@ -682,9 +843,179 @@ class StringBuilder
         return get_called_class();
     }
 
+    /**
+     * クラスデフォルトとしてエスケープするかどうかを設定・取得します。
+     *
+     * @param   bool    $use_escape クラスデフォルトとしてエスケープするかどうか
+     * @return  string|bool このクラスパスまたはクラスデフォルトとしてエスケープするかどうか
+     */
+    public static function defaultUseEscape($use_escape = null)
+    {
+        if ($use_escape === null && func_num_args() === 0) {
+            return static::$defaultUseEscape;
+        }
+
+        static::$defaultUseEscape  = $use_escape;
+        return get_called_class();
+    }
+
+    /**
+     * クラスデフォルトのエスケープタイプを設定・取得します。
+     *
+     * @param   string|null $escape_type   クラスデフォルトのエスケープタイプ
+     * @return  string      このクラスパスまたはクラスデフォルトのエスケープタイプ
+     */
+    public static function defaultEscapeType($escape_type = null)
+    {
+        if ($escape_type === null && func_num_args() === 0) {
+            return static::$defaultEscapeType;
+        }
+
+        if (!Convert::validEscapeType($escape_type)) {
+            throw new \InvalidArgumentException(sprintf('利用できないエスケープタイプを指定されました。escape_type:%s', $escape_type));
+        }
+
+        static::$defaultEscapeType  = $escape_type;
+        return get_called_class();
+    }
+
+    /**
+     * クラスデフォルトのメッセージを設定・取得します。
+     *
+     * @param   string|null $message    クラスデフォルトのメッセージ
+     * @return  string      このクラスパスまたはクラスデフォルトのメッセージ
+     */
+    public static function defaultMessage($message = null)
+    {
+        if ($message === null && func_num_args() === 0) {
+            return static::$defaultMessage;
+        }
+
+        static::$defaultMessage = $message;
+        return get_called_class();
+    }
+
+    /**
+     * クラスデフォルトのプレビルダを設定・取得します。
+     *
+     * @param   callable|null   $pre_builder    クラスデフォルトのプレビルダ
+     * @return  string|callable このクラスパスまたはクラスデフォルトのプレビルダ
+     */
+    public static function defaultPreBuilder($pre_builder = null)
+    {
+        if ($pre_builder === null && func_num_args() === 0) {
+            return static::$defaultPreBuilder;
+        }
+
+        static::$defaultPreBuilder = $pre_builder;
+        return get_called_class();
+    }
+
+    /**
+     * クラスデフォルトのポストビルダを設定・取得します。
+     *
+     * @param   callable|null   $pre_builder    クラスデフォルトのポストビルダ
+     * @return  string|callable このクラスパスまたはクラスデフォルトのポストビルダ
+     */
+    public static function defaultPostBuilder($post_builder = null)
+    {
+        if ($post_builder === null && func_num_args() === 0) {
+            return static::$defaultPostBuilder;
+        }
+
+        static::$defaultPostBuilder = $post_builder;
+        return get_called_class();
+    }
+
     //==============================================
     // property accessors
     //==============================================
+    /**
+     * 設定を纏めて設定・取得します。
+     *
+     * @param   array|null  $settings   設定
+     * @return  static|array    このインスタンスまたは設定
+     */
+    public function settings($settings = null)
+    {
+        if (!is_array($settings)) {
+            return array(
+                'values'                => $this->values(),
+                'converter'             => $this->converter(),
+                'character_encodingg'   => $this->characterEncoding(),
+                'enclosure_start'       => $this->enclosureBegin(),
+                'enclosure_end'         => $this->enclosureEnd(),
+                'name_separator'        => $this->nameSeparator(),
+                'modifier_separator'    => $this->modifierSeparator(),
+                'modifier_set'          => $this->modifierSet(),
+                'substitute'            => $this->substitute(),
+                'use_escape'            => $this->useEscape(),
+                'escape_type'           => $this->escapeType(),
+                'message'               => $this->meessage(),
+                'pre_builder'           => $this->preBuilder(),
+                'post_builder'          => $this->postBuilder(),
+            );
+        }
+
+        if (isset($settings['values'])) {
+            $this->values($settings['values']);
+        }
+
+        if (isset($settings['converter'])) {
+            $this->converter($settings['converter']);
+        }
+
+        if (isset($settings['character_encodingg'])) {
+            $this->characterEncoding($settings['character_encodingg']);
+        }
+
+        if (isset($settings['enclosure_start'])) {
+            $this->enclosureBegin($settings['enclosure_start']);
+        }
+
+        if (isset($settings['enclosure_end'])) {
+            $this->enclosureEnd($settings['enclosure_end']);
+        }
+
+        if (isset($settings['name_separator'])) {
+            $this->nameSeparator($settings['name_separator']);
+        }
+
+        if (isset($settings['modifier_separator'])) {
+            $this->modifierSeparator($settings['modifier_separator']);
+        }
+
+        if (isset($settings['modifier_set'])) {
+            $this->modifierSet($settings['modifier_set']);
+        }
+
+        if (isset($settings['substitute'])) {
+            $this->substitute($settings['substitute']);
+        }
+
+        if (isset($settings['use_escape'])) {
+            $this->useEscape($settings['use_escape']);
+        }
+
+        if (isset($settings['escape_type'])) {
+            $this->escapeType($settings['escape_type']);
+        }
+
+        if (isset($settings['message'])) {
+            $this->message($settings['message']);
+        }
+
+        if (isset($settings['pre_builder'])) {
+            $this->preBuilder($settings['pre_builder']);
+        }
+
+        if (isset($settings['post_builder'])) {
+            $this->postBuilder($settings['post_builder']);
+        }
+
+        return $this;
+    }
+
     /**
      * 文字列ビルダキャッシュ名を返します。
      *
@@ -1037,6 +1368,107 @@ class StringBuilder
         return $this;
     }
 
+    /**
+     * デフォルトとしてエスケープするかどうかを設定・取得します。
+     *
+     * @param   bool    $use_escape デフォルトとしてエスケープするかどうか
+     * @return  static|bool このインスタンスまたはデフォルトとしてエスケープするかどうか
+     */
+    public function useEscape($use_escape = false)
+    {
+        if ($use_escape === false && func_num_args() === 0) {
+            return $this->useEscape;
+        }
+
+        $this->useEscape    = $use_escape;
+        return $this;
+    }
+
+    /**
+     * デフォルトのエスケープタイプを設定・取得します。
+     *
+     * @param   string  $escape_type    デフォルトのエスケープタイプ
+     * @return  static|string   このインスタンスまたはデフォルトのエスケープタイプ
+     */
+    public function escapeType($escape_type = null)
+    {
+        if ($escape_type === null && func_num_args() === 0) {
+            return $this->escapeType;
+        }
+
+        if (!Convert::validEscapeType($escape_type)) {
+            throw new \InvalidArgumentException(sprintf('利用できないエスケープタイプを指定されました。escape_type:%s', $escape_type));
+        }
+
+        $this->escapeType   = $escape_type;
+        return $this;
+    }
+
+    /**
+     * デフォルトのメッセージを設定・取得します。
+     *
+     * @param   string  $message    デフォルトのメッセージ
+     * @return  static|string   このインスタンスまたはデフォルトのメッセージ
+     */
+    public function message($message = null)
+    {
+        if ($message === null && func_num_args() === 0) {
+            return $this->message;
+        }
+
+        $this->message  = $message;
+        return $this;
+    }
+
+    /**
+     * プレビルダを設定・取得します。
+     *
+     * @param   callable|null   $pre_builder    プレビルダ
+     * @return  static|callable このクラスパスまたはプレビルダ
+     */
+    public function preBuilder($pre_builder = null)
+    {
+        if ($pre_builder === null && func_num_args() === 0) {
+            return $this->preBuilder;
+        }
+
+        $this->preBuilder   = $pre_builder;
+        return $this;
+    }
+
+    /**
+     * ポストビルダを設定・取得します。
+     *
+     * @param   callable|null   $pre_builder    ポストビルダ
+     * @return  static|callable このクラスパスまたはポストビルダ
+     */
+    public function postBuilder($post_builder = null)
+    {
+        if ($post_builder === null && func_num_args() === 0) {
+            return $this->postBuilder;
+        }
+
+        $this->postBuilder  = $post_builder;
+        return $this;
+    }
+
+    //==============================================
+    // supporter
+    //==============================================
+    /**
+     * shell用ポストビルダー
+     *
+     * @param   string  $message    メッセージ
+     * @param   array   $values     値
+     * @param   array   $converter  コンバータ
+     * @param   StringBuilder   $stringBuilder  ストリングビルダインスタンス
+     * @return  string  メッセージ
+     */
+    public static function postBuilderForShell($message, $values, $converter, $stringBuilder)
+    {
+        return escapeshellcmd($message);
+    }
+
     //==============================================
     // modifier
     //==============================================
@@ -1053,14 +1485,24 @@ class StringBuilder
             'encoding'  => $this->characterEncoding,
         );
 
+        $use_raw    = false;
         foreach ($modifier_list as $modifier_name => $parameters) {
             $modifier   = isset($this->modifierSet[$modifier_name]) ? $this->modifierSet[$modifier_name] : null;
 
             if (is_string($modifier)) {
+                if ($modifier === 'raw') {
+                    $use_raw    = true;
+                    continue;
+                }
+
                 $replace    = $modifier::modify($replace, $parameters, $context);
             } elseif (is_object($modifier)) {
                 $replace    = $modifier($replace, $parameters, $context);
             }
+        }
+
+        if (!$use_raw && $this->useEscape) {
+            $replace    = EscapeModifier::modify($replace, array('type' => $this->escapeType), $context);
         }
 
         return $replace;
@@ -1070,15 +1512,39 @@ class StringBuilder
     // builder
     //==============================================
     /**
-     * メッセージをビルドします。
+     * ビルドします。
      *
-     * @param   string                                  $message    ビルドするメッセージ
      * @param   array|object                            $values     変数
      * @param   Closure|ConverterInterface|string|null  $converter  コンバータ
      * @return  string  ビルド後のメッセージ
      */
-    public function build($message, $values = array(), $converter = null)
+    public function build($values = array(), $converter = null)
     {
+        return $this->buildMessage($this->message, $values, $converter);
+    }
+
+    /**
+     * メッセージを指定してビルドします。
+     *
+     * @param   string|null                             $message    ビルドするメッセージ
+     * @param   array|object                            $values     変数
+     * @param   Closure|ConverterInterface|string|null  $converter  コンバータ
+     * @return  string  ビルド後のメッセージ
+     */
+    public function buildMessage($message, $values = array(), $converter = null)
+    {
+        if (!empty($this->preBuilder)) {
+            $pre_builders   = $this->preBuilder;
+
+            if (is_callable($pre_builders)) {
+                $pre_builders   = array($pre_builders);
+            }
+
+            foreach ($pre_builders as $pre_builder) {
+                $message    = $pre_builder($message, $values, $converter, $this);
+            }
+        }
+
         $converter              = isset($converter) ? $converter : $this->converter;
         $enable_converter       = $converter instanceof Closure || is_subclass_of($converter, "\\fw3_for_old\\strings\\builder\\traits\\converter\\ConverterInterface");
         $is_invokable_converter = $enable_converter && is_object($converter);
@@ -1288,6 +1754,18 @@ class StringBuilder
 
             $before_message = $message;
             $message = str_replace($search, $replace, $message);
+        }
+
+        if (!empty($this->postBuilder)) {
+            $post_builders  = $this->postBuilder;
+
+            if (is_callable($post_builders)) {
+                $post_builders  = array($post_builders);
+            }
+
+            foreach ($post_builders as $post_builder) {
+                $message    = $post_builder($message, $values, $converter, $this);
+            }
         }
 
         return $message;

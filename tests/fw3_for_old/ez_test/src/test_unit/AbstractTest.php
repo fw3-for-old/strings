@@ -28,7 +28,24 @@ abstract class AbstractTest implements TestInterface
     protected $logs = array(
         'success'   => array(),
         'failed'    => array(),
+        'error'     => array(),
     );
+
+    protected $preparedException = null;
+
+    protected $preparedExceptionMessage = null;
+
+    public function hasPreparedException()
+    {
+        return $this->preparedException !== null
+        || $this->preparedExceptionMessage !== null;
+    }
+
+    public function cleanupPreparedException()
+    {
+        $this->preparedException        = null;
+        $this->preparedExceptionMessage = null;
+    }
 
     /**
      * 値を型判定付きでアサーションします。
@@ -139,25 +156,50 @@ abstract class AbstractTest implements TestInterface
     }
 
     /**
-     * 値が期待する例外かアサーションします。
+     * 事前準備済みの例外をアサーションします。
      *
-     * @param   array   $expected   予想される値
-     * @param   array   $actual     実際の値
+     * @param   mixed   $actual 実際の値
      */
-    protected function expectException($expected, $actual)
+    public function assertPreparedException($actual)
     {
-        $this->log($actual instanceof $expected, $expected, $actual);
+        if ($this->preparedException !== null) {
+            $this->assertException($this->preparedException, $actual);
+        }
+
+        if ($this->preparedExceptionMessage !== null) {
+            $this->assertExceptionMessage($this->preparedExceptionMessage, $actual);
+        }
     }
 
     /**
-     * 値が期待する例外メッセージを持つかアサーションします。
+     * 例外をアサーションします。
      *
-     * @param   array   $expected   予想される値
-     * @param   array   $actual     実際の値
+     * @param   string      $expected   予想される値
+     * @param   \Exception  $actual     実際の例外
      */
-    protected function expectExceptionMessage($expected, $actual)
+    protected function assertException($expected, $actual = null)
     {
-        $this->log($actual->getMessage() === $expected, $expected, $actual);
+        if ($actual !== null) {
+            $this->log($actual instanceof $expected, $expected, $actual);
+        } else {
+            $this->preparedException    = $expected;
+        }
+    }
+
+    /**
+     * 例外メッセージをアサーションします。
+     *
+     * @param   string      $expected   予想される値
+     * @param   \Exception  $actual     実際の例外
+     */
+    protected function assertExceptionMessage($expected, $actual = null)
+    {
+        if ($actual !== null) {
+            $actual = $actual->getMessage();
+            $this->log($expected === $actual, $expected, $actual);
+        } else {
+            $this->preparedExceptionMessage = $expected;
+        }
     }
 
     /**
@@ -308,21 +350,6 @@ abstract class AbstractTest implements TestInterface
 
         //数値実体参照表記からの変換
         return \html_entity_decode('&#'. $code_point .';');
-    }
-
-    /**
-     * 例外をアサーションします。
-     *
-     * @param   string      $expected   予想される値
-     * @param   \Exception  $e          実際の例外
-     * @return boolean
-     */
-    protected function assertException($expected, $e)
-    {
-        $actual = $e->getMessage();
-        $status = $expected === $actual;
-
-        $this->log($status, $expected, $actual);
     }
 
     /**

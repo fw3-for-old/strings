@@ -9,6 +9,9 @@ use fw3_for_old\strings\builder\modifiers\security\EscapeModifier;
 use fw3_for_old\strings\builder\traits\converter\AbstractConverter;
 use fw3_for_old\strings\converter\Convert;
 
+/**
+ * @processFork
+ */
 class StringBuilderTest extends AbstractTest
 {
     protected $internalEncoding = null;
@@ -26,11 +29,13 @@ class StringBuilderTest extends AbstractTest
 
     public function testBuild()
     {
+        throw new \Exception();
+
         $stringBuilder    = StringBuilder::factory();
 
         //----------------------------------------------
         $expected   = '';
-        $actual     = $stringBuilder->build('');
+        $actual     = $stringBuilder->buildMessage('');
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -38,7 +43,7 @@ class StringBuilderTest extends AbstractTest
         $values     = array('"');
 
         $expected   = '&quot;';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -46,7 +51,7 @@ class StringBuilderTest extends AbstractTest
         $values     = (object) array('"');
 
         $expected   = '&quot;';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -55,7 +60,7 @@ class StringBuilderTest extends AbstractTest
         $converter  = "\\fw3_for_old\\tests\\strings\\cases\\builder\\UrlConvertr";
 
         $expected   = '&quot;https://ickx.jp&quot;';
-        $actual     = $stringBuilder->build($message, $values, $converter);
+        $actual     = $stringBuilder->buildMessage($message, $values, $converter);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -64,7 +69,7 @@ class StringBuilderTest extends AbstractTest
         $converter  = new UrlConvertr();
 
         $expected   = '&quot;https://ickx.jp&quot;';
-        $actual     = $stringBuilder->build($message, $values, $converter);
+        $actual     = $stringBuilder->buildMessage($message, $values, $converter);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -75,7 +80,7 @@ class StringBuilderTest extends AbstractTest
         };
 
         $expected   = '&quot;ickx&quot;';
-        $actual     = $stringBuilder->build($message, $values, $converter);
+        $actual     = $stringBuilder->buildMessage($message, $values, $converter);
         $this->assertEquals($expected, $actual);
     }
 
@@ -84,12 +89,12 @@ class StringBuilderTest extends AbstractTest
         //==============================================
         $character_encoding = StringBuilder::factory()->characterEncoding();
 
-        $expected   = 'UTF-8';
+        $expected   = 'UTF-81';
         $actual     = $character_encoding;
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
-        StringBuilder::get()->characterEncoding('SJIS-win');
+        StringBuilder::get()->characterEncoding('SJIS-win1');
 
         $expected   = 'SJIS-win';
         $actual     = StringBuilder::get()->characterEncoding();
@@ -103,7 +108,7 @@ class StringBuilderTest extends AbstractTest
     {
         //==============================================
         $values     = array(
-            'html'  => '<a href="{:ickx}">{:ickx}</a><br><a href="{:effy}">{:effy}</a>',
+            'html'  => '<a href="{:ickx}">{:ick x}</a><br><a href="{:effy}">{:effy}</a>',
         );
 
         $converter_set   = $this->getUrlConverterSet();
@@ -116,7 +121,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href="https://ickx.jp">https://ickx.jp</a><br><a href="https://effy.info">https://effy.info</a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -131,7 +136,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href="https://ickx.jp">https://ickx.jp</a><br><a href="https://effy.info">https://effy.info</a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -146,7 +151,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href="https://ickx.jp">https://ickx.jp</a><br><a href="https://effy.info">https://effy.info</a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -170,7 +175,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href=""></a><br><a href=""></a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -185,7 +190,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href=""></a><br><a href=""></a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -200,7 +205,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href=""></a><br><a href=""></a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -262,7 +267,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href="https://ickx.jp">https://ickx.jp</a><br><a href="https://effy.info">https://effy.info</a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -279,7 +284,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href="https://ickx.jp">https://ickx.jp</a><br><a href="https://effy.info">https://effy.info</a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -296,7 +301,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href="https://ickx.jp">https://ickx.jp</a><br><a href="https://effy.info">https://effy.info</a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -320,7 +325,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href=""></a><br><a href=""></a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -337,7 +342,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href=""></a><br><a href=""></a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -354,7 +359,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = '{:html}';
         $expected   = '<a href=""></a><br><a href=""></a>';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $expected   = $converter_set[$set_name];
@@ -362,9 +367,6 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testDefaultEnclosure()
     {
         //==============================================
@@ -386,7 +388,7 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf ${html}} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -397,13 +399,13 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf {:html} zxcv';
 
         $expected   = 'asdf {:html} zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = 'asdf ${html}} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -416,7 +418,7 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf ${html}} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
@@ -440,9 +442,6 @@ class StringBuilderTest extends AbstractTest
         );
     }
 
-    /**
-     * @processFork
-     */
     public function testDefaultEnclosureBeginException()
     {
         StringBuilder::defaultSubstitute('■');
@@ -453,15 +452,12 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::defaultEnclosure(array($value, '}'));
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($message, $e);
-                $this->expectException("\\InvalidArgumentException", $e);
+                $this->assertExceptionMessage($message, $e);
+                $this->assertException("\\InvalidArgumentException", $e);
             }
         }
     }
 
-    /**
-     * @processFork
-     */
     public function testDefaultEnclosureEndExceptionDataProvider()
     {
         StringBuilder::defaultSubstitute('■');
@@ -472,15 +468,12 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::defaultEnclosure(array('{:', $value));
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($message, $e);
-                $this->expectException("\\InvalidArgumentException", $e);
+                $this->assertExceptionMessage($message, $e);
+                $this->assertException("\\InvalidArgumentException", $e);
             }
         }
     }
 
-    /**
-     * @processFork
-     */
     public function testDefaultEnclosureBegin()
     {
         //==============================================
@@ -504,7 +497,7 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf ${html} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -515,13 +508,10 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf {:html} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testSetDefaultValue()
     {
         //==============================================
@@ -542,7 +532,7 @@ class StringBuilderTest extends AbstractTest
         //----------------------------------------------
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
 
         StringBuilder::remove(StringBuilder::DEFAULT_NAME);
@@ -553,13 +543,10 @@ class StringBuilderTest extends AbstractTest
 
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf <a href=\'#id\'> zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testDefaultEnclosureEnd()
     {
         //==============================================
@@ -583,7 +570,7 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf {:html}} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -594,7 +581,7 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf {:html} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
@@ -625,25 +612,25 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:begin:0}';
 
         $expected   = 'begin';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:0:begin}';
 
         $expected   = '00000';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:begin:0|zero_to_dq|escape}';
 
         $expected   = 'begin';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:0:begin|zero_to_dq|escape}';
 
         $expected   = '&quot;&quot;&quot;&quot;&quot;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -657,13 +644,13 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:begin:0}';
 
         $expected   = 'aaaa';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:begin<>0}';
 
         $expected   = 'begin';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
@@ -687,15 +674,12 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::defaultNameSeparator($value);
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($message, $e);
-                $this->expectException($exception_class, $e);
+                $this->assertExceptionMessage($message, $e);
+                $this->assertException($exception_class, $e);
             }
         }
     }
 
-    /**
-     * @processFork
-     */
     public function testDefaultModifierSeparator()
     {
         //==============================================
@@ -721,13 +705,13 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:0|zero_to_dq}';
 
         $expected   = '"""""';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:0|zero_to_dq|escape}';
 
         $expected   = '&quot;&quot;&quot;&quot;&quot;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -741,19 +725,19 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:0<>zero_to_dq}';
 
         $expected   = '"""""';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:0<>zero_to_dq<>escape}';
 
         $expected   = '&quot;&quot;&quot;&quot;&quot;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:0<>zero_to_dq|escape}';
 
         $expected   = '&quot;&quot;&quot;&quot;&quot;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
@@ -777,16 +761,13 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::defaultModifierSeparator($value);
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($message, $e);
-                $this->expectException($exception_class, $e);
+                $this->assertExceptionMessage($message, $e);
+                $this->assertException($exception_class, $e);
             }
         }
 
     }
 
-    /**
-     * @processFork
-     */
     public function testDefaultModifierSet()
     {
         //==============================================
@@ -818,14 +799,14 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:0|zero_to_dq}';
 
         $expected   = '00000';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
         $message    = '{:0|zero_to_dq|escape}';
 
         $expected   = '00000';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -840,20 +821,17 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:0|zero_to_dq}';
 
         $expected   = '"""""';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
         $message    = '{:0|zero_to_dq|escape}';
 
         $expected   = '&quot;&quot;&quot;&quot;&quot;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testDefaultSubstitute()
     {
         //==============================================
@@ -873,7 +851,7 @@ class StringBuilderTest extends AbstractTest
         StringBuilder::factory();
 
         $expected   = '/';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -888,7 +866,7 @@ class StringBuilderTest extends AbstractTest
         $string_builder_class::factory();
 
         $expected   = '{:html2}/{:alt2}';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -899,7 +877,7 @@ class StringBuilderTest extends AbstractTest
         $string_builder_class::factory();
 
         $expected   = '/';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -910,7 +888,7 @@ class StringBuilderTest extends AbstractTest
         $string_builder_class::factory();
 
         $expected   = '■/■';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -921,13 +899,10 @@ class StringBuilderTest extends AbstractTest
         $string_builder_class::factory();
 
         $expected   = '<a href="#id">/<a href="#id">';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testDefaultValues()
     {
         //==============================================
@@ -949,7 +924,7 @@ class StringBuilderTest extends AbstractTest
         //----------------------------------------------
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -963,7 +938,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf <a href=\'#id\'> zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
     }
 
@@ -988,7 +963,7 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf ${html}} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -997,13 +972,13 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf {:html} zxcv';
 
         $expected   = 'asdf {:html} zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = 'asdf ${html}} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1012,7 +987,7 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf ${html}} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
@@ -1036,9 +1011,6 @@ class StringBuilderTest extends AbstractTest
         );
     }
 
-    /**
-     * @processFork
-     */
     public function testEnclosureBeginException()
     {
         StringBuilder::defaultSubstitute('■');
@@ -1049,15 +1021,12 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::factory()->enclosure(array($value, '}'));
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($message, $e);
-                $this->expectException($exception_class, $e);
+                $this->assertExceptionMessage($message, $e);
+                $this->assertException($exception_class, $e);
             }
         }
     }
 
-    /**
-     * @processFork
-     */
     public function testEnclosureEndExceptionDataProvider()
     {
         StringBuilder::defaultSubstitute('■');
@@ -1068,15 +1037,12 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::factory()->enclosure(array('{:', $value));
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($message, $e);
-                $this->expectException($exception_class, $e);
+                $this->assertExceptionMessage($message, $e);
+                $this->assertException($exception_class, $e);
             }
         }
     }
 
-    /**
-     * @processFork
-     */
     public function testEnclosureBegin()
     {
         //==============================================
@@ -1100,7 +1066,7 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf ${html} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1109,13 +1075,10 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf {:html} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testEnclosureEnd()
     {
         //==============================================
@@ -1139,7 +1102,7 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf {:html}} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1148,14 +1111,11 @@ class StringBuilderTest extends AbstractTest
         $message    = 'asdf {:html} zxcv';
 
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
     }
 
-    /**
-     * @processFork
-     */
     public function testFactory()
     {
         //==============================================
@@ -1180,23 +1140,20 @@ class StringBuilderTest extends AbstractTest
 
         //----------------------------------------------
         $expected   = StringBuilder::DEFAULT_NAME;
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
         $expected   = 'a1';
-        $actual     = StringBuilder::get('a1')->build($message);
+        $actual     = StringBuilder::get('a1')->buildMessage($message);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
         $expected   = 'b2';
-        $actual     = StringBuilder::get('b2')->build($message);
+        $actual     = StringBuilder::get('b2')->buildMessage($message);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testGet()
     {
         //==============================================
@@ -1221,17 +1178,17 @@ class StringBuilderTest extends AbstractTest
 
         //----------------------------------------------
         $expected   = StringBuilder::DEFAULT_NAME;
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
         $expected   = 'a1';
-        $actual     = StringBuilder::get('a1')->build($message);
+        $actual     = StringBuilder::get('a1')->buildMessage($message);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
         $expected   = 'b2';
-        $actual     = StringBuilder::get('b2')->build($message);
+        $actual     = StringBuilder::get('b2')->buildMessage($message);
         $this->assertEquals($expected, $actual);
     }
 
@@ -1248,9 +1205,6 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testNameSeparator()
     {
         //==============================================
@@ -1276,25 +1230,25 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:begin:0}';
 
         $expected   = 'begin';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:0:begin}';
 
         $expected   = '00000';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:begin:0|zero_to_dq|escape}';
 
         $expected   = 'begin';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:0:begin|zero_to_dq|escape}';
 
         $expected   = '&quot;&quot;&quot;&quot;&quot;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -1307,13 +1261,13 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:begin:0}';
 
         $expected   = 'aaaa';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:begin<>0}';
 
         $expected   = 'begin';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
@@ -1337,15 +1291,12 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::factory()->nameSeparator($value);
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($message, $e);
-                $this->expectException($exception_class, $e);
+                $this->assertExceptionMessage($message, $e);
+                $this->assertException($exception_class, $e);
             }
         }
     }
 
-    /**
-     * @processFork
-     */
     public function testModifierSeparator()
     {
         //==============================================
@@ -1371,13 +1322,13 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:0|zero_to_dq}';
 
         $expected   = '"""""';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:0|zero_to_dq|escape}';
 
         $expected   = '&quot;&quot;&quot;&quot;&quot;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -1388,19 +1339,19 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:0<>zero_to_dq}';
 
         $expected   = '"""""';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:0<>zero_to_dq<>escape}';
 
         $expected   = '&quot;&quot;&quot;&quot;&quot;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         $message    = '{:0<>zero_to_dq|escape}';
 
         $expected   = '&quot;&quot;&quot;&quot;&quot;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
@@ -1424,15 +1375,12 @@ class StringBuilderTest extends AbstractTest
             try {
                 StringBuilder::factory()->modifierSeparator($value);
             } catch (\Exception $e) {
-                $this->expectExceptionMessage($message, $e);
-                $this->expectException($exception_class, $e);
+                $this->assertExceptionMessage($message, $e);
+                $this->assertException($exception_class, $e);
             }
         }
     }
 
-    /**
-     * @processFork
-     */
     public function testModifierSet()
     {
         //==============================================
@@ -1464,14 +1412,14 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:0|zero_to_dq}';
 
         $expected   = '00000';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
         $message    = '{:0|zero_to_dq|escape}';
 
         $expected   = '00000';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -1486,20 +1434,17 @@ class StringBuilderTest extends AbstractTest
         $message    = '{:0|zero_to_dq}';
 
         $expected   = '"""""';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
         $message    = '{:0|zero_to_dq|escape}';
 
         $expected   = '&quot;&quot;&quot;&quot;&quot;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testModify()
     {
         //==============================================
@@ -1576,15 +1521,13 @@ class StringBuilderTest extends AbstractTest
         $exception_class    = "\\OutOfBoundsException";
         $message            = 'StringBuilderキャッシュに無いキーを指定されました。name:\':default:\'';
 
-        try {
-            StringBuilder::factory();
-            StringBuilder::get()->build('');
-            StringBuilder::remove(StringBuilder::DEFAULT_NAME);
-            StringBuilder::get();
-        } catch (\Exception $e) {
-            $this->expectExceptionMessage($message, $e);
-            $this->expectException($exception_class, $e);
-        }
+        $this->assertExceptionMessage($message);
+        $this->assertException($exception_class);
+
+        StringBuilder::factory();
+        StringBuilder::get()->buildMessage('');
+        StringBuilder::remove(StringBuilder::DEFAULT_NAME);
+        StringBuilder::get();
     }
 
     public function testRemove02()
@@ -1592,15 +1535,13 @@ class StringBuilderTest extends AbstractTest
         $exception_class    = "\\OutOfBoundsException";
         $message            = 'StringBuilderキャッシュに無いキーを指定されました。name:\'a1\'';
 
-        try {
-            StringBuilder::factory('a1');
-            StringBuilder::get('a1')->build('');
-            StringBuilder::remove('a1');
-            StringBuilder::get('a1');
-        } catch (\Exception $e) {
-            $this->expectExceptionMessage($message, $e);
-            $this->expectException($exception_class, $e);
-        }
+        $this->assertExceptionMessage($message);
+        $this->assertException($exception_class);
+
+        StringBuilder::factory('a1');
+        StringBuilder::get('a1')->buildMessage('');
+        StringBuilder::remove('a1');
+        StringBuilder::get('a1');
     }
 
     public function testRemoveDefaultModifier()
@@ -1622,7 +1563,7 @@ class StringBuilderTest extends AbstractTest
 
         //----------------------------------------------
         $expected   = '&lt;a href=&quot;#id&quot;&gt;';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1630,13 +1571,10 @@ class StringBuilderTest extends AbstractTest
         $this->assertArrayNotHasKey('classpath', StringBuilder::get('removed')->modifierSet());
 
         $expected   = '<a href="#id">';
-        $actual     = StringBuilder::get('removed')->build($message, $values);
+        $actual     = StringBuilder::get('removed')->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testRemoveDefaultValue()
     {
         //----------------------------------------------
@@ -1645,7 +1583,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
 
         StringBuilder::remove(StringBuilder::DEFAULT_NAME);
@@ -1657,7 +1595,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf  zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
     }
 
@@ -1679,7 +1617,7 @@ class StringBuilderTest extends AbstractTest
 
         //----------------------------------------------
         $expected   = '&lt;a href=&quot;#id&quot;&gt;';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1689,13 +1627,10 @@ class StringBuilderTest extends AbstractTest
         $this->assertArrayNotHasKey('classpath', $stringBuilder->modifierSet());
 
         $expected   = '<a href="#id">';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testRemoveValue()
     {
         //----------------------------------------------
@@ -1703,7 +1638,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1711,7 +1646,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf  zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
     }
 
@@ -1736,17 +1671,17 @@ class StringBuilderTest extends AbstractTest
 
         //----------------------------------------------
         $message    = '{:html|closure}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
         $message    = '{:html|instance}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
         $message    = '{:html|classpath}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -1762,7 +1697,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|closure}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1773,7 +1708,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|instance}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1784,7 +1719,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|classpath}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -1804,7 +1739,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|closure}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1815,7 +1750,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|instance}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1826,7 +1761,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|classpath}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
@@ -1850,7 +1785,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|closure}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1861,7 +1796,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|instance}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1872,7 +1807,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|classpath}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -1888,7 +1823,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|closure}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1899,7 +1834,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|instance}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1910,7 +1845,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertInstanceOf("\\fw3_for_old\\strings\\builder\\StringBuilder", $stringBuilder);
 
         $message    = '{:html|classpath}';
-        $actual     = $stringBuilder->build($message, $values);
+        $actual     = $stringBuilder->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
@@ -1931,7 +1866,7 @@ class StringBuilderTest extends AbstractTest
         //----------------------------------------------
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -1939,13 +1874,10 @@ class StringBuilderTest extends AbstractTest
 
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf <a href=\'#id\'> zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testSubstitute()
     {
         //==============================================
@@ -1963,7 +1895,7 @@ class StringBuilderTest extends AbstractTest
 
         //----------------------------------------------
         $expected   = '/';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -1974,7 +1906,7 @@ class StringBuilderTest extends AbstractTest
         $this->assertEquals($expected, $actual);
 
         $expected   = '{:html2}/{:alt2}';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -1983,7 +1915,7 @@ class StringBuilderTest extends AbstractTest
         StringBuilder::get()->substitute($substitute);
 
         $expected   = '/';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -1992,7 +1924,7 @@ class StringBuilderTest extends AbstractTest
         StringBuilder::get()->substitute($substitute);
 
         $expected   = '■/■';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
 
         //==============================================
@@ -2001,13 +1933,10 @@ class StringBuilderTest extends AbstractTest
         StringBuilder::get()->substitute($substitute);
 
         $expected   = '<a href="#id">/<a href="#id">';
-        $actual     = StringBuilder::get()->build($message, $values);
+        $actual     = StringBuilder::get()->buildMessage($message, $values);
         $this->assertEquals($expected, $actual);
     }
 
-    /**
-     * @processFork
-     */
     public function testValues()
     {
         //==============================================
@@ -2029,7 +1958,7 @@ class StringBuilderTest extends AbstractTest
         //----------------------------------------------
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf <a href="#id"> zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
@@ -2041,7 +1970,7 @@ class StringBuilderTest extends AbstractTest
 
         $message    = 'asdf {:html} zxcv';
         $expected   = 'asdf <a href=\'#id\'> zxcv';
-        $actual     = StringBuilder::get()->build($message);
+        $actual     = StringBuilder::get()->buildMessage($message);
         $this->assertEquals($expected, $actual);
     }
 
