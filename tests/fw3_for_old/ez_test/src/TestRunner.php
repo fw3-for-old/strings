@@ -125,6 +125,12 @@ class TestRunner
     protected $startMicrotime   = 0;
 
     /**
+     * @var array   TestRunnerがもつコンテキスト情報
+     * TestRunner生成時のコンテキスト情報をテストクラスに渡したい場合に使う
+     */
+    protected $contexts = array();
+
+    /**
      * @var null|array  実行結果
      */
     protected $result   = null;
@@ -238,7 +244,7 @@ class TestRunner
         }
 
         ob_start();
-        $logs               = $this->test($this->pickupTestCase());
+        $logs   = $this->test($this->pickupTestCase());
 
         $end_mts    = microtime(true);
         $end_time   = explode('.', $end_mts);
@@ -318,9 +324,7 @@ class TestRunner
         $test_case_root_dir = $result['test_case_root_dir'];
 
         $time               = $result['time'];
-        $start_microtime    = $time['start_microtime'];
         $start_time         = $time['start_datetime'];
-        $end_mts            = $time['end_microtime'];
         $end_time           = $time['end_datetime'];
         $exec_time          = $time['exec_time'];
 
@@ -461,7 +465,7 @@ class TestRunner
      * テストケースのルートディレクトリを取得・設定します。
      *
      * @param   null|string $case_root_dir  テストケースのルートディレクトリ
-     * @return  string|\fw3_for_old\ez_test\TestRunner  テストケースのルートディレクトリまたはこのインスタンス
+     * @return  string|TestRunner  テストケースのルートディレクトリまたはこのインスタンス
      */
     public function testCaseRootDir($case_root_dir = null)
     {
@@ -477,9 +481,9 @@ class TestRunner
      * 実行モードを取得・設定します。
      *
      * @param   string  $exec_mode  実行モード
-     * @return  string|\fw3_for_old\ez_test\TestRunner  実行モードまたはこのインスタンス
+     * @return  string|TestRunner  実行モードまたはこのインスタンス
      */
-    public function execMode($exec_mode)
+    public function execMode($exec_mode = null)
     {
         if ($exec_mode === null && \func_num_args() === 0) {
             return $this->execMode;
@@ -497,9 +501,9 @@ class TestRunner
      * PHPバイナリのパスを取得・設定します。
      *
      * @param   string  $php_binary_path    PHPバイナリのパス
-     * @return  string|\fw3_for_old\ez_test\TestRunner  PHPバイナリのパスまたはこのインスタンス
+     * @return  string|TestRunner  PHPバイナリのパスまたはこのインスタンス
      */
-    public function phpBinaryPath($php_binary_path)
+    public function phpBinaryPath($php_binary_path = null)
     {
         if ($php_binary_path === null && \func_num_args() === 0) {
             return $this->phpBinaryPath;
@@ -513,9 +517,9 @@ class TestRunner
      * php.iniのパスを取得・設定します。
      *
      * @param   string  $php_ini_path   php.iniのパス
-     * @return  string|\fw3_for_old\ez_test\TestRunner  php.iniのパスまたはこのインスタンス
+     * @return  string|TestRunner  php.iniのパスまたはこのインスタンス
      */
-    public function phpIniPath($php_ini_path)
+    public function phpIniPath($php_ini_path = null)
     {
         if ($php_ini_path === null && \func_num_args() === 0) {
             return $this->phpIniPath;
@@ -529,9 +533,9 @@ class TestRunner
      * 標準出力モードを取得・設定します。
      *
      * @param   string  $php_binary_path    標準出力モード
-     * @return  string|\fw3_for_old\ez_test\TestRunner  標準出力モードまたはこのインスタンス
+     * @return  string|TestRunner   標準出力モードまたはこのインスタンス
      */
-    public function stdOutMode($std_out_mode)
+    public function stdOutMode($std_out_mode = null)
     {
         if ($std_out_mode === null && \func_num_args() === 0) {
             return $this->stdOutMode;
@@ -542,6 +546,22 @@ class TestRunner
         }
 
         $this->stdOutMode   = $std_out_mode;
+        return $this;
+    }
+
+    /**
+     * コンテキスト情報を取得・設定します。
+     *
+     * @param   array   $contexts   コンテキスト情報
+     * @return  array|TestRunner    コンテキスト情報またはこのインスタンス
+     */
+    public function contexts($contexts = null)
+    {
+        if ($contexts === null && \func_num_args() === 0) {
+            return $this->contexts;
+        }
+
+        $this->contexts = $contexts;
         return $this;
     }
 
@@ -605,7 +625,7 @@ class TestRunner
             }
 
             /** @var AbstractTest $testClass */
-            $testClass  = new $test_class();
+            $testClass  = new $test_class($this->contexts);
             $testClass->initialize();
             $testClass->setupTest();
 
@@ -740,7 +760,7 @@ class TestRunner
             $success_count    = !empty($test_log['success']) ? count($test_log['success']) : 0;
             $failed_count     = !empty($test_log['failed']) ? count($test_log['failed']) : 0;
             $error_count      = !empty($test_log['error']) ? count($test_log['error']) : 0;
-            $total              = $success_count + $failed_count + $error_count;
+            $total            = $success_count + $failed_count + $error_count;
 
             $success_total  += $success_count;
             $failed_total   += $failed_count;
@@ -765,31 +785,39 @@ class TestRunner
 
             $error_message  = array();
 
-            if (!empty($test_log['error'])) {
-                $error_message[]  = \sprintf('    PHP Error details => %s', $class);
+            if ($total === 0) {
+                $error_message[]  = '------------------------------------------------';
+                $error_message[]  = \sprintf('    Notice: No assertions test => %s', $class);
+                $error_message[]  = '------------------------------------------------';
 
-                foreach ($test_log['error'] as $idx => $error) {
-                    $error_message[]    = '';
-                    $error_message[]    = sprintf('      #%d %s', $idx, trim($error));
-                }
-            }
-
-            if (!empty($test_log['failed'])) {
-                if (!empty($error_message)) {
-                    $error_message[]    = '';
+            } else {
+                if (!empty($test_log['error'])) {
                     $error_message[]  = '------------------------------------------------';
+
+                    $error_message[]  = \sprintf('    PHP Error details => %s', $class);
+
+                    foreach ($test_log['error'] as $idx => $error) {
+                        $error_message[]    = '';
+                        $error_message[]    = sprintf('      #%d %s', $idx, trim($error));
+                    }
                 }
 
-                $error_message[]    = \sprintf('    test failed details => %s', $class);
+                if (!empty($test_log['failed'])) {
+                    if (!empty($error_message)) {
+                        $error_message[]  = '------------------------------------------------';
+                    }
 
-                foreach ($test_log['failed'] as $idx => $failed) {
-                    $expected   = static::toText($failed['expected'], 999);
-                    $actual     = static::toText($failed['actual'], 999);
+                    $error_message[]    = \sprintf('    test failed details => %s', $class);
 
-                    $error_message[]    = '';
-                    $error_message[]    = \sprintf('      #%d %s', $idx, $failed['backtrace']);
-                    $error_message[]    = \sprintf('        expected: %s', $expected);
-                    $error_message[]    = \sprintf('        actual:   %s', $actual);
+                    foreach ($test_log['failed'] as $idx => $failed) {
+                        $expected   = static::toText($failed['expected'], 999);
+                        $actual     = static::toText($failed['actual'], 999);
+
+                        $error_message[]    = '';
+                        $error_message[]    = \sprintf('      #%d %s', $idx, $failed['backtrace']);
+                        $error_message[]    = \sprintf('        expected: %s', $expected);
+                        $error_message[]    = \sprintf('        actual:   %s', $actual);
+                    }
                 }
             }
 

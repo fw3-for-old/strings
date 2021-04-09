@@ -31,9 +31,31 @@ abstract class AbstractTest implements TestInterface
         'error'     => array(),
     );
 
+    private $contexts = array();
+
     protected $preparedException = null;
 
     protected $preparedExceptionMessage = null;
+
+    final public function __construct($contexts)
+    {
+        $this->contexts = $contexts;
+    }
+
+    final protected function hasContext($name)
+    {
+        return isset($this->contexts[$name]) || array_key_exists($name, $this->contexts);
+    }
+
+    final protected function getContext($name)
+    {
+        return isset($this->contexts[$name]) ? $this->contexts[$name] : null;
+    }
+
+    final protected function getContexts()
+    {
+        return $this->contexts;
+    }
 
     public function hasPreparedException()
     {
@@ -400,6 +422,18 @@ abstract class AbstractTest implements TestInterface
         }
 
         return \sprintf('php://filter/%s', \implode('/', $stack));
+    }
+
+    /**
+     * 実行されたアサーションが一つも無かったかどうかを返します。
+     *
+     * @return  bool    実行されたアサーションが一つも無かったかどうか
+     */
+    public function isNoAssertions()
+    {
+        return empty($this->logs['success'])
+         && empty($this->logs['failed'])
+         && empty($this->logs['error']);
     }
 
     /**
