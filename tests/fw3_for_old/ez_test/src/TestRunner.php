@@ -105,6 +105,11 @@ class TestRunner
     protected $testCaseRootDir  = null;
 
     /**
+     * @var bool    アサーションに失敗した場合に当該のテストを停止するかどうか
+     */
+    protected $stopWithAssertionFailed  = false;
+
+    /**
      * @var string  PHPバイナリパス
      */
     protected $phpBinaryPath    = null;
@@ -176,15 +181,15 @@ class TestRunner
             foreach (array('cases', 'case') as $dir_name) {
                 $case_dir   = \sprintf('%s/%s', $base_dir, $dir_name);
 
-                if (!file_exists($case_dir)) {
+                if (!\file_exists($case_dir)) {
                     continue;
                 }
 
-                if (!is_readable($case_dir)) {
+                if (!\is_readable($case_dir)) {
                     continue;
                 }
 
-                if ($other_than_windows && !is_executable($case_dir)) {
+                if ($other_than_windows && !\is_executable($case_dir)) {
                     continue;
                 }
 
@@ -199,6 +204,7 @@ class TestRunner
             'mode:',
             'class:',
             'method:',
+            'stop_with_assertion_failed:',
         ));
 
         if (isset($cli_options['mode'])) {
@@ -218,6 +224,10 @@ class TestRunner
             $instance->stdOutMode(static::STD_OUT_MODE_JSON);
         }
 
+        if (isset($cli_options['stop_with_assertion_failed'])) {
+            $instance->stopWithAssertionFailed($cli_options['stop_with_assertion_failed']);
+        }
+
         return $instance;
     }
 
@@ -232,8 +242,8 @@ class TestRunner
             throw new \Exception('テストケースのルートディレクトリが指定されていません。');
         }
 
-        $start_time = explode('.', $this->startMicrotime);
-        $start_time = \sprintf('%s.%s', date('Y/m/d H:i:s', $start_time[0]), isset($start_time[1]) ? $start_time[1] : 0);
+        $start_time = \explode('.', $this->startMicrotime);
+        $start_time = \sprintf('%s.%s', \date('Y/m/d H:i:s', $start_time[0]), isset($start_time[1]) ? $start_time[1] : 0);
 
         if ($this->stdOutMode === self::STD_OUT_MODE_TEXT) {
             echo '================================================', \PHP_EOL;
@@ -243,16 +253,16 @@ class TestRunner
             echo \sprintf(' start time  : %s', $start_time), \PHP_EOL;
         }
 
-        ob_start();
+        \ob_start();
         $logs       = $this->test($this->pickupTestCase());
 
-        $end_mts    = microtime(true);
-        $end_time   = explode('.', $end_mts);
-        $end_time   = \sprintf('%s.%s', date('Y/m/d H:i:s', $end_time[0]), isset($end_time[1]) ? $end_time[1] : 0);
+        $end_mts    = \microtime(true);
+        $end_time   = \explode('.', $end_mts);
+        $end_time   = \sprintf('%s.%s', \date('Y/m/d H:i:s', $end_time[0]), isset($end_time[1]) ? $end_time[1] : 0);
 
         $exec_time  = $end_mts - $this->startMicrotime;
 
-        $std_out    = ob_get_clean();
+        $std_out    = \ob_get_clean();
 
         if ($this->stdOutMode === self::STD_OUT_MODE_TEXT) {
             echo \sprintf(' end time    : %s', $end_time), \PHP_EOL;
@@ -426,21 +436,21 @@ class TestRunner
             }
         }
 
-        sort($start_microtime);
-        sort($start_datetime);
-        sort($end_microtime);
-        sort($end_datetime);
+        \sort($start_microtime);
+        \sort($start_datetime);
+        \sort($end_microtime);
+        \sort($end_datetime);
 
         return array(
-            'test_case_root_dir'    => implode(sprintf('%s target test cases =>', \PHP_EOL), $test_case_root_dir_list),
+            'test_case_root_dir'    => \implode(\sprintf('%s target test cases =>', \PHP_EOL), $test_case_root_dir_list),
             'time'                  => array(
-                'start_microtime'   => reset($start_microtime),
-                'start_datetime'    => reset($start_datetime),
-                'end_microtime'     => end($end_microtime),
-                'end_datetime'      => end($end_datetime),
-                'exec_time'         => array_sum($exec_time),
+                'start_microtime'   => \reset($start_microtime),
+                'start_datetime'    => \reset($start_datetime),
+                'end_microtime'     => \end($end_microtime),
+                'end_datetime'      => \end($end_datetime),
+                'exec_time'         => \array_sum($exec_time),
             ),
-            'std_out'               => !empty($std_out) ? implode(\PHP_EOL, $std_out) : null,
+            'std_out'               => !empty($std_out) ? \implode(\PHP_EOL, $std_out) : null,
             'logs'                  => $logs,
         );
     }
@@ -504,10 +514,31 @@ class TestRunner
         }
 
         if (!isset(static::$EXEC_MODE_MAP[$exec_mode])) {
-            throw new \Exception(spintf('未知の実行モードを指定されました。mode:%s', static::toText($exec_mode)));
+            throw new \Exception(\spintf('未知の実行モードを指定されました。mode:%s', static::toText($exec_mode)));
         }
 
         $this->execMode = $exec_mode;
+        return $this;
+    }
+
+    /**
+     * アサーションに失敗した場合に当該のテストを停止するかどうかを取得・設定します。
+     *
+     * @param   bool    $stop_with_assertion_failed アサーションに失敗した場合に当該のテストを停止するかどうか
+     * @return  string|TestRunner   アサーションに失敗した場合に当該のテストを停止するかどうかまたはこのインスタンス
+     */
+    public function stopWithAssertionFailed($stop_with_assertion_failed = null)
+    {
+        if ($exec_mode === null && \func_num_args() === 0) {
+            return $this->stopWithAssertionFailed;
+        }
+
+        $filtered_stop_with_assertion_failed    = filter_var($stop_with_assertion_failed, \FILTER_VALIDATE_BOOLEAN, \FILTER_NULL_ON_FAILURE);
+        if (!is_bool($filtered_stop_with_assertion_failed)) {
+            throw new \Exception(\spintf('解釈できないフラグを指定されました。stop_with_assertion_failed:%s', static::toText($filtered_stop_with_assertion_failed, 2)));
+        }
+
+        $this->stopWithAssertionFailed  = $filtered_stop_with_assertion_failed;
         return $this;
     }
 
@@ -661,9 +692,9 @@ class TestRunner
 
                 if (!$is_proccess_fork && $reflectionTestMethod->useProcessFork() || $base_use_proccess_fork) {
                     if ($php_binary === null) {
-                        if (version_compare(PHP_VERSION, '5.4.0', '<')) {
-                            if (!is_string($this->phpBinaryPath) || !is_file($this->phpBinaryPath)) {
-                                throw new \Exception(sprintf('PHP5.4.0未満でプロセスフォークを利用するにはphpBinaryPathに有効なPHPバイナリパスを設定してください。phpBinaryPath:%s', static::toText($this->phpBinaryPath)));
+                        if (\version_compare(PHP_VERSION, '5.4.0', '<')) {
+                            if (!\is_string($this->phpBinaryPath) || !is_file($this->phpBinaryPath)) {
+                                throw new \Exception(\sprintf('PHP5.4.0未満でプロセスフォークを利用するにはphpBinaryPathに有効なPHPバイナリパスを設定してください。phpBinaryPath:%s', static::toText($this->phpBinaryPath)));
                             }
                         }
 
@@ -703,7 +734,7 @@ class TestRunner
                         $testClass->mergeLogs($logs['logs'][$test_class]);
                     } else {
                         $testClass->mergeLogs(array('error' => array(
-                            implode(\PHP_EOL, $output),
+                            \implode(\PHP_EOL, $output),
                         )));
                     }
 
@@ -772,10 +803,10 @@ class TestRunner
         $detail_message = array();
 
         foreach ($logs as $class => $test_log) {
-            $success_count  = !empty($test_log['success']) ? count($test_log['success']) : 0;
-            $failed_count   = !empty($test_log['failed']) ? count($test_log['failed']) : 0;
-            $error_count    = !empty($test_log['error']) ? count($test_log['error']) : 0;
-            $skip_count     = !empty($test_log['skip']) ? count($test_log['skip']) : 0;
+            $success_count  = !empty($test_log['success']) ? \count($test_log['success']) : 0;
+            $failed_count   = !empty($test_log['failed']) ? \count($test_log['failed']) : 0;
+            $error_count    = !empty($test_log['error']) ? \count($test_log['error']) : 0;
+            $skip_count     = !empty($test_log['skip']) ? \count($test_log['skip']) : 0;
 
             $total          = $success_count + $failed_count + $error_count + $skip_count;
 
@@ -918,14 +949,14 @@ class TestRunner
                 $tmp_properties = array();
                 foreach ($ro->getProperties() as $property) {
                     $state      = $property->isStatic() ? 'static' : 'dynamic';
-                    $modifier   = $property->isPublic() ? 'public' : ($property->isProtected() ? 'protected' : ($property->isPrivate() ? 'private' : 'unkown modifier'));
+                    $modifier   = $property->isPublic() ? 'public' : ($property->isProtected() ? 'protected' : ($property->isPrivate() ? 'private' : 'unknown modifier'));
                     $tmp_properties[$state][$modifier][]    = $property;
                 }
 
                 $properties = array();
                 foreach (array('static', 'dynamic') as $state) {
                     $state_text = $state === 'static' ? 'static ' : '';
-                    foreach (array('public', 'protected', 'private', 'unkown modifier') as $modifier) {
+                    foreach (array('public', 'protected', 'private', 'unknown modifier') as $modifier) {
                         foreach (isset($tmp_properties[$state][$modifier]) ? $tmp_properties[$state][$modifier] : array() as $property) {
                             $property->setAccessible(true);
                             $properties[] = \sprintf('%s%s %s = %s', $state_text, $modifier, static::toText($property->getName()), static::toText($property->getValue($var), $depth));

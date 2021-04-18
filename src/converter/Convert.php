@@ -500,14 +500,14 @@ class Convert
                 $tmp_properties = array();
                 foreach ($ro->getProperties() as $property) {
                     $state      = $property->isStatic() ? 'static' : 'dynamic';
-                    $modifier   = $property->isPublic() ? 'public' : ($property->isProtected() ? 'protected' : ($property->isPrivate() ? 'private' : 'unkown modifier'));
+                    $modifier   = $property->isPublic() ? 'public' : ($property->isProtected() ? 'protected' : ($property->isPrivate() ? 'private' : 'unknown modifier'));
                     $tmp_properties[$state][$modifier][] = $property;
                 }
 
                 $properties = array();
                 foreach (array('static', 'dynamic') as $state) {
                     $state_text = $state === 'static' ? 'static ' : '';
-                    foreach (array('public', 'protected', 'private', 'unkown modifier') as $modifier) {
+                    foreach (array('public', 'protected', 'private', 'unknown modifier') as $modifier) {
                         foreach (isset($tmp_properties[$state][$modifier]) ? $tmp_properties[$state][$modifier] : array() as $property) {
                             $property->setAccessible(true);
                             $properties[] = sprintf('%s%s %s = %s', $state_text, $modifier, static::toDebugString($property->getName()), static::toDebugString($property->getValue($var), $depth));
