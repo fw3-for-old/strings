@@ -375,13 +375,44 @@ abstract class AbstractTest implements TestInterface
     }
 
     /**
+     * テストをスキップします。
+     *
+     * @param   string  $message    スキップ事由
+     */
+    protected function skipTest($message)
+    {
+        $backtrace          = \debug_backtrace();
+
+        $idx = 1;
+        do {
+            if ($backtrace[$idx]['class'] !== get_class()) {
+                $backtrace_detail   = \sprintf(
+                    '%s%s%s() in line %d',
+                    $backtrace[$idx]['class'],
+                    $backtrace[$idx]['type'],
+                    $backtrace[$idx]['function'],
+                    $backtrace[$idx - 1]['line']
+                    );
+                break;
+            }
+            ++$idx;
+        } while (true);
+
+        $this->logs['skip'][] = array(
+            'backtrace' => $backtrace_detail,
+            'message'   => $message,
+        );
+    }
+
+    /**
      * アサーションの実行内容をログに保存します。
      *
      * @param   bool    $status     実行時の検証結果
      * @param   mixed   $expected   予想される値
      * @param   mixed   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
      */
-    protected function log($status, $expected, $actual)
+    protected function log($status, $expected, $actual, $message = null)
     {
         $backtrace          = \debug_backtrace();
 
@@ -405,6 +436,7 @@ abstract class AbstractTest implements TestInterface
             'backtrace' => $backtrace_detail,
             'actual'    => $actual,
             'expected'  => $expected,
+            'message'   => $message,
         );
     }
 
@@ -432,6 +464,7 @@ abstract class AbstractTest implements TestInterface
     public function isNoAssertions()
     {
         return empty($this->logs['success'])
+         && empty($this->logs['skip'])
          && empty($this->logs['failed'])
          && empty($this->logs['error']);
     }

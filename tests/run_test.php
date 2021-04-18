@@ -18,6 +18,8 @@
 namespace fw3_for_old\tests\strings;
 
 use fw3_for_old\ez_test\TestRunner;
+use fw3_for_old\strings\builder\StringBuilder;
+use fw3_for_old\strings\builder\traits\converter\AbstractConverter;
 
 // includes
 require_once sprintf('%s/src/strings_require_once.php', \dirname(__DIR__));

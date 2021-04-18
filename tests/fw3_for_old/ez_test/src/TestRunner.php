@@ -244,7 +244,7 @@ class TestRunner
         }
 
         ob_start();
-        $logs   = $this->test($this->pickupTestCase());
+        $logs       = $this->test($this->pickupTestCase());
 
         $end_mts    = microtime(true);
         $end_time   = explode('.', $end_mts);
@@ -287,12 +287,14 @@ class TestRunner
             $parsed_logs    = static::logParse($logs);
 
             $is_error       = $parsed_logs['is_error'];
+            $total          = $parsed_logs['total'];
             $success_total  = $parsed_logs['success_total'];
             $failed_total   = $parsed_logs['failed_total'];
+            $error_total    = $parsed_logs['error_total'];
             $detail_message = $parsed_logs['detail_message'];
 
             echo '================================================', \PHP_EOL;
-            echo \sprintf(' test result: %s (%s / %s)', $is_error ? 'failed' : 'success', $success_total, $success_total + $failed_total), \PHP_EOL;
+            echo \sprintf(' test result: %s (%d / %d)', $is_error ? 'failed' : 'success', $success_total, $total), \PHP_EOL;
             echo '------------------------------------------------', \PHP_EOL;
             echo ' details', \PHP_EOL;
             echo '------------------------------------------------', \PHP_EOL;
@@ -324,7 +326,9 @@ class TestRunner
         $test_case_root_dir = $result['test_case_root_dir'];
 
         $time               = $result['time'];
+        $start_microtime    = $time['start_microtime'];
         $start_time         = $time['start_datetime'];
+        $end_mts            = $time['end_microtime'];
         $end_time           = $time['end_datetime'];
         $exec_time          = $time['exec_time'];
 
@@ -351,12 +355,14 @@ class TestRunner
         $parsed_logs    = static::logParse($result['logs']);
 
         $is_error       = $parsed_logs['is_error'];
+        $total          = $parsed_logs['total'];
         $success_total  = $parsed_logs['success_total'];
         $failed_total   = $parsed_logs['failed_total'];
+        $error_total    = $parsed_logs['error_total'];
         $detail_message = $parsed_logs['detail_message'];
 
         echo '================================================', \PHP_EOL;
-        echo \sprintf(' test result: %s (%s / %s)', $is_error ? 'failed' : 'success', $success_total, $success_total + $failed_total), \PHP_EOL;
+        echo \sprintf(' test result: %s (%d / %d)', $is_error ? 'failed' : 'success', $success_total, $total), \PHP_EOL;
         echo '------------------------------------------------', \PHP_EOL;
         echo ' details', \PHP_EOL;
         echo '------------------------------------------------', \PHP_EOL;
@@ -377,7 +383,7 @@ class TestRunner
      */
     public static function convertMultiApiResultForResultRender($multi_api_results)
     {
-        $test_case_root_dir = array();
+        $test_case_root_dir_list    = array();
 
         $start_microtime    = array();
         $start_datetime     = array();
@@ -390,7 +396,8 @@ class TestRunner
         $logs   = array();
 
         foreach ($multi_api_results as $result) {
-            $test_case_root_dir[]   = $result['test_case_root_dir'];
+            $test_case_root_dir         = $result['test_case_root_dir'];
+            $test_case_root_dir_list[]  = $test_case_root_dir;
 
             $time   = $result['time'];
             $start_microtime[]  = $time['start_microtime'];
@@ -404,10 +411,17 @@ class TestRunner
             }
 
             foreach ($result['logs'] as $test_case => $log) {
+                $log_total  = 0;
+
                 foreach ($log as $status => $messages) {
                     foreach ($messages as $set) {
                         $logs[$test_case][$status][]    = $set;
+                        ++$log_total;
                     }
+                }
+
+                if ($log_total === 0) {
+                    $logs[$test_case]   = array();
                 }
             }
         }
@@ -418,7 +432,7 @@ class TestRunner
         sort($end_datetime);
 
         return array(
-            'test_case_root_dir'    => implode(\PHP_EOL, $test_case_root_dir),
+            'test_case_root_dir'    => implode(sprintf('%s target test cases =>', \PHP_EOL), $test_case_root_dir_list),
             'time'                  => array(
                 'start_microtime'   => reset($start_microtime),
                 'start_datetime'    => reset($start_datetime),
@@ -753,57 +767,71 @@ class TestRunner
         $success_total  = 0;
         $failed_total   = 0;
         $error_total    = 0;
+        $skip_total     = 0;
 
         $detail_message = array();
 
         foreach ($logs as $class => $test_log) {
-            $success_count    = !empty($test_log['success']) ? count($test_log['success']) : 0;
-            $failed_count     = !empty($test_log['failed']) ? count($test_log['failed']) : 0;
-            $error_count      = !empty($test_log['error']) ? count($test_log['error']) : 0;
-            $total            = $success_count + $failed_count + $error_count;
+            $success_count  = !empty($test_log['success']) ? count($test_log['success']) : 0;
+            $failed_count   = !empty($test_log['failed']) ? count($test_log['failed']) : 0;
+            $error_count    = !empty($test_log['error']) ? count($test_log['error']) : 0;
+            $skip_count     = !empty($test_log['skip']) ? count($test_log['skip']) : 0;
+
+            $total          = $success_count + $failed_count + $error_count + $skip_count;
 
             $success_total  += $success_count;
             $failed_total   += $failed_count;
             $error_total    += $error_count;
+            $skip_total     += $skip_count;
 
             $is_error   = $failed_count !== 0 || $error_count !== 0;
 
             $message    = array();
 
-            if ($is_error) {
-                $message[]  = '------------------------------------------------';
-            }
-
-            $message[]  = \sprintf(
-                '  test %s: %s / %s%s => %s',
-                $is_error ? 'failed ' : 'success',
-                $success_count,
-                $total,
-                $is_error ? \sprintf(' (PHP Error: %s, failed: %s)', $error_count, $failed_count) : '',
-                $class
-            );
-
-            $error_message  = array();
-
             if ($total === 0) {
-                $error_message[]  = '------------------------------------------------';
-                $error_message[]  = \sprintf('    Notice: No assertions test => %s', $class);
-                $error_message[]  = '------------------------------------------------';
-
+                $error_message[]    = \sprintf('  Notice: No assertions test => %s', $class);
+                ++$error_total;
+                $is_error   = true;
             } else {
+                if ($is_error) {
+                    $message[]  = '------------------------------------------------';
+                }
+
+                $message[]  = \sprintf(
+                    '  test %s: %s / %s%s%s => %s',
+                    $is_error ? 'failed ' : 'success',
+                    $success_count + $skip_count,
+                    $total,
+                    $skip_count !== 0 ? \sprintf(' (skiped: %d)', $skip_count) : '',
+                    $is_error ? \sprintf(' (PHP Error: %d, failed: %d)', $error_count, $failed_count) : '',
+                    $class
+                );
+
+                if (!empty($test_log['skip'])) {
+                    $message[]  = \sprintf('    skip tests => %s', $class);
+
+                    foreach ($test_log['skip'] as $idx => $skip) {
+                        $message[]  = \sprintf(
+                            '      #%d %s%s', $idx, $skip['backtrace'],
+                            isset($skip['message']) ? \sprintf(' reason: %s', \trim($skip['message'])) : ''
+                        );
+                    }
+                }
+
+                $error_message  = array();
+
                 if (!empty($test_log['error'])) {
                     $error_message[]  = '------------------------------------------------';
-
                     $error_message[]  = \sprintf('    PHP Error details => %s', $class);
 
                     foreach ($test_log['error'] as $idx => $error) {
-                        $error_message[]    = '';
-                        $error_message[]    = sprintf('      #%d %s', $idx, trim($error));
+                        $error_message[]    = \sprintf('#%d %s', $idx, \trim($error));
                     }
                 }
 
                 if (!empty($test_log['failed'])) {
                     if (!empty($error_message)) {
+                        $error_message[]    = '';
                         $error_message[]  = '------------------------------------------------';
                     }
 
@@ -819,10 +847,10 @@ class TestRunner
                         $error_message[]    = \sprintf('        actual:   %s', $actual);
                     }
                 }
-            }
 
-            if ($is_error) {
-                $error_message[]  = '------------------------------------------------';
+                if ($is_error) {
+                    $error_message[]  = '------------------------------------------------';
+                }
             }
 
             $detail_message[]   = \implode(\PHP_EOL, array_merge($message, $error_message));
@@ -830,7 +858,9 @@ class TestRunner
 
         return array(
             'detail_message'    => $detail_message,
+            'total'             => $success_total + $skip_total + $failed_total + $error_total,
             'success_total'     => $success_total,
+            'skip_total'        => $skip_total,
             'failed_total'      => $failed_total,
             'error_total'       => $error_total,
             'is_error'          => $is_error,

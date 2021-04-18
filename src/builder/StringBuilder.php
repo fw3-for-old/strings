@@ -613,11 +613,11 @@ class StringBuilder
             );
         }
 
-        if (!is_string($enclosure_begin)) {
+        if (!\is_string($enclosure_begin)) {
             throw new InvalidArgumentException(sprintf('有効な変数部開始文字列を取得できませんでした。enclosure:%s', Convert::toDebugString($enclosure, 2)));
         }
 
-        if (!is_string($enclosure_end)) {
+        if (!\is_string($enclosure_end)) {
             throw new InvalidArgumentException(sprintf('有効な変数部終了文字列を取得できませんでした。enclosure:%s', Convert::toDebugString($enclosure, 2)));
         }
 
@@ -791,7 +791,7 @@ class StringBuilder
      */
     public static function setDefaultModifier($name, $modifier)
     {
-        if (is_string($modifier) && !is_subclass_of($modifier, "\\fw3_for_old\\strings\\builder\\modifiers\\ModifierInterface")) {
+        if (\is_string($modifier) && !is_subclass_of($modifier, "\\fw3_for_old\\strings\\builder\\modifiers\\ModifierInterface")) {
             throw new InvalidArgumentException(sprintf('使用できない型の修飾子です。name:%s, modifier:%s', $name, Convert::toDebugString($modifier, 1)));
         }
 
@@ -1144,12 +1144,12 @@ class StringBuilder
             );
         }
 
-        if (!is_string($enclosure_begin)) {
+        if (!\is_string($enclosure_begin)) {
             throw new InvalidArgumentException(sprintf('有効な変数部開始文字列を取得できませんでした。enclosure:%s', Convert::toDebugString($enclosure, 2)));
         }
 
 
-        if (!is_string($enclosure_end)) {
+        if (!\is_string($enclosure_end)) {
             throw new InvalidArgumentException(sprintf('有効な変数部終了文字列を取得できませんでした。enclosure:%s', Convert::toDebugString($enclosure, 2)));
         }
 
@@ -1326,7 +1326,7 @@ class StringBuilder
      */
     public function setModifier($name, $modifier)
     {
-        if (is_string($modifier) && !is_subclass_of($modifier, "\\fw3_for_old\\strings\\builder\\modifiers\\ModifierInterface")) {
+        if (\is_string($modifier) && !is_subclass_of($modifier, "\\fw3_for_old\\strings\\builder\\modifiers\\ModifierInterface")) {
             throw new InvalidArgumentException(sprintf('使用できない型の修飾子です。name:%s, modifier:%s', $name, Convert::toDebugString($modifier, 1)));
         }
 
@@ -1489,7 +1489,7 @@ class StringBuilder
         foreach ($modifier_list as $modifier_name => $parameters) {
             $modifier   = isset($this->modifierSet[$modifier_name]) ? $this->modifierSet[$modifier_name] : null;
 
-            if (is_string($modifier)) {
+            if (\is_string($modifier)) {
                 if ($modifier === 'raw') {
                     $use_raw    = true;
                     continue;
@@ -1546,10 +1546,10 @@ class StringBuilder
         }
 
         $converter              = isset($converter) ? $converter : $this->converter;
-        $enable_converter       = $converter instanceof Closure || is_subclass_of($converter, "\\fw3_for_old\\strings\\builder\\traits\\converter\\ConverterInterface");
+        $enable_converter       = $converter instanceof Closure || \is_subclass_of($converter, "\\fw3_for_old\\strings\\builder\\traits\\converter\\ConverterInterface");
         $is_invokable_converter = $enable_converter && is_object($converter);
 
-        $modifier_separator_length  = mb_strlen($this->modifierSeparator, $this->characterEncoding);
+        $modifier_separator_length  = \mb_strlen($this->modifierSeparator, $this->characterEncoding);
 
         $tmp_values = $this->values;
         foreach ($values as $name => $value) {
@@ -1557,11 +1557,32 @@ class StringBuilder
         }
         $values = $tmp_values;
 
+        $pos            = 0;
+        $name           = '';
         $before_message = '';
-        for (;false !== ($begin = mb_strrpos($message, $this->enclosureBegin, 0, $this->characterEncoding)) && false !== ($end = mb_strpos($message, $this->enclosureEnd, $begin, $this->characterEncoding));) {
+        $before_pos     = 0;
+
+        $begin  = 0;
+
+        for (;false !== ($begin = \mb_strrpos($message, $this->enclosureBegin, $pos, $this->characterEncoding)) && false !== ($end = \mb_strpos($message, $this->enclosureEnd, $begin, $this->characterEncoding));) {
             if ($before_message === $message) {
-                break;
+                $message_length = \mb_strlen($message, $this->characterEncoding);
+                $pos    = $begin - $message_length - 1;
+
+                if ($pos + $message_length < 0) {
+                    $pos = -$message_length;
+                }
+
+                if ($before_pos === $pos) {
+                    break;
+                }
+
+                $before_pos = $pos;
+
+                $before_message = '';
+                continue;
             }
+            $before_pos = $pos;
 
             $name_begin  = $begin + $this->enclosureLengthBegin;
             $name_end    = $end - $begin - $this->enclosureLengthBegin;
@@ -1569,26 +1590,26 @@ class StringBuilder
             $tag_begin  = $begin;
             $tag_end    = $end - $begin + $this->enclosureLengthEnd;
 
-            $name   = mb_substr($message, $name_begin, $name_end, $this->characterEncoding);
-            $search = mb_substr($message, $tag_begin, $tag_end, $this->characterEncoding);
+            $name   = \mb_substr($message, $name_begin, $name_end, $this->characterEncoding);
+            $search = \mb_substr($message, $tag_begin, $tag_end, $this->characterEncoding);
 
-            if (false !== mb_strpos($name, $this->enclosureBegin, 0, $this->characterEncoding)) {
+            if (false !== \mb_strpos($name, $this->enclosureBegin, 0, $this->characterEncoding)) {
                 $before_message = $message;
-                $name       = $this->build($name, $values, $converter);
-                $message    = str_replace($search, $name, $message);
+                $name       = $this->buildMessage($name, $values, $converter);
+                $message    = \str_replace($search, $name, $message);
                 continue;
             }
 
             $modifier_list    = array();
-            if (false !== ($modifier_begin = mb_strpos($name, $this->modifierSeparator, 0, $this->characterEncoding))) {
+            if (false !== ($modifier_begin = \mb_strpos($name, $this->modifierSeparator, 0, $this->characterEncoding))) {
                 $modifier_name          = null;
                 $modifier_in_ellipsis   = false;
                 $modifier_in_array      = false;
                 $modifier_stack         = array();
                 $modifier_parameter_name    = null;
 
-                foreach (token_get_all('<?php ' . mb_substr($name, $modifier_begin + $modifier_separator_length)) as $token) {
-                    if (is_string($token)) {
+                foreach (\token_get_all('<?php ' . \mb_substr($name, $modifier_begin + $modifier_separator_length)) as $token) {
+                    if (\is_string($token)) {
                         $token_id   = $token;
                         $token_text = $token;
                     } else {
@@ -1681,18 +1702,18 @@ class StringBuilder
 
                     if ($token_id === T_LNUMBER) {
                         $token_text = (int) $token_text;
-                        $modifier_stack   = end($modifier_stack) === '-' ? -1 * $token_text : $token_text;
+                        $modifier_stack   = \end($modifier_stack) === '-' ? -1 * $token_text : $token_text;
                         continue;
                     }
 
                     if ($token_id === T_DNUMBER) {
                         $token_text = (float) $token_text;
-                        $modifier_stack   = end($modifier_stack) === '-' ? -1.0 * $token_text : $token_text;
+                        $modifier_stack   = \end($modifier_stack) === '-' ? -1.0 * $token_text : $token_text;
                         continue;
                     }
 
                     if ($token_id === T_CONSTANT_ENCAPSED_STRING) {
-                        $modifier_stack   = mb_substr($token_text, 1, -1, $this->characterEncoding);
+                        $modifier_stack   = \mb_substr($token_text, 1, -1, $this->characterEncoding);
                         continue;
                     }
 
@@ -1708,35 +1729,35 @@ class StringBuilder
 
                     if ($token_id === T_CLASS) {
                         $modifier_stack[] = $token_text;
-                        $modifier_stack   = implode('', $modifier_stack);
+                        $modifier_stack   = \implode('', $modifier_stack);
                         continue;
                     }
                 }
 
-                $name    = mb_substr($name, 0, $modifier_begin, $this->characterEncoding);
+                $name    = \mb_substr($name, 0, $modifier_begin, $this->characterEncoding);
             }
 
-            $names      = false === mb_strpos($name, $this->nameSeparator, 0, $this->characterEncoding) ? (array) $name : explode($this->nameSeparator, $name);
+            $names      = false === \mb_strpos($name, $this->nameSeparator, 0, $this->characterEncoding) ? (array) $name : \explode($this->nameSeparator, $name);
             $replace    = null;
 
             foreach ($names as $name) {
                 if ($enable_converter) {
                     $replace = $is_invokable_converter ? $converter($name, $search, $values) : $converter::convert($name, $search, $values);
 
-                    if ($replace === null && isset($values[$name]) || array_key_exists($name, $values)) {
+                    if ($replace === null && isset($values[$name]) || \array_key_exists($name, $values)) {
                         $replace    = $values[$name];
                     }
 
                     empty($modifier_list) ?: $replace = $this->modify($replace, $modifier_list);
 
-                    if (is_string($replace)) {
+                    if (\is_string($replace)) {
                         $before_message = $message;
-                        $message = str_replace($search, $replace, $message);
+                        $message = \str_replace($search, $replace, $message);
                         continue 2;
                     }
                 }
 
-                if (isset($values[$name]) || array_key_exists($name, $values)) {
+                if (isset($values[$name]) || \array_key_exists($name, $values)) {
                     $replace    = $values[$name];
                     break;
                 }
@@ -1753,13 +1774,13 @@ class StringBuilder
             empty($modifier_list) ?: $replace = $this->modify($replace, $modifier_list);
 
             $before_message = $message;
-            $message = str_replace($search, $replace, $message);
+            $message = \str_replace($search, $replace, $message);
         }
 
         if (!empty($this->postBuilder)) {
             $post_builders  = $this->postBuilder;
 
-            if (is_callable($post_builders)) {
+            if (\is_callable($post_builders)) {
                 $post_builders  = array($post_builders);
             }
 

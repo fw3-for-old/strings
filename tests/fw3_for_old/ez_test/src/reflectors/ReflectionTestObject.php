@@ -109,12 +109,25 @@ class ReflectionTestObject extends \ReflectionClass implements \IteratorAggregat
 
     public function useProcessFork()
     {
-        return isset($this->annotationList[self::ANNOTATION_PROCESS_FORK]);
+        return $this->useableByKey(self::ANNOTATION_PROCESS_FORK);
     }
 
     public function useInstanceFork()
     {
-        return isset($this->annotationList[self::ANNOTATION_INSTANCE_FORK]);
+        return $this->useableByKey(self::ANNOTATION_INSTANCE_FORK);
+    }
+
+    protected function useableByKey($key)
+    {
+        if (!isset($this->annotationList[$key])) {
+            return false;
+        }
+
+        if (isset($this->annotationList[$key]['options'][0])) {
+            return $this->annotationList[$key]['options'][0] === true;
+        }
+
+        return true;
     }
 
     public function getIterator()
@@ -122,64 +135,3 @@ class ReflectionTestObject extends \ReflectionClass implements \IteratorAggregat
         return new \ArrayIterator($this->testMethodList);
     }
 }
-
-//     /**
-//      * テストを実施します。
-//      *
-//      * @param   array   $test_case_paths    テストケースパス
-//      * @return  array   テスト実行結果
-//      */
-//     protected function test($test_case_paths)
-//     {
-//         foreach (\array_diff(\get_declared_classes(), $loaded_classes) as $added_class) {
-//             if (\substr($added_class, -4) !== 'Test') {
-//                 continue;
-//             }
-
-//             if (!is_subclass_of($added_class, "\\fw3_for_old\\ez_test\\test_unit\\TestInterface")) {
-//                 continue;
-//             }
-
-//             $rc = new \ReflectionClass($added_class);
-//             if (!$rc->isInstantiable()) {
-//                 continue;
-//             }
-
-//             $rc->getDocComment();
-
-//             $test_class = new $added_class();
-
-//             try {
-//                 $test_class->setup();
-
-//                 $init       = $rc->hasMethod('init') ? $rc->getMethod('init') : null;
-//                 $cleanUp    = $rc->hasMethod('cleanUp') ? $rc->getMethod('cleanUp') : null;
-
-//                 foreach ($rc->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-//                     $this->parseMethodDocComment($method);
-
-//                     if (\substr($method->name, 0, 4) !== 'test') {
-//                         $init === null ?: $init->invoke($test_class);
-//                         $method->invoke($test_class);
-//                         $cleanUp === null ?: $cleanUp->invoke($test_class);
-//                     }
-//                 }
-
-//                 $test_class->tearDown();
-
-
-//                 $result[\get_class($test_class)]    = $test_class->getLogs();
-//             } catch (\Exception $e) {
-//                 throw $e;
-//             }
-//         }
-
-//         return $result;
-//     }
-
-
-// foreach (ReflectionTestMethod::$ANNOTATION_MAP as $method_level_annotation) {
-//     if (isset($instance->annotationList[$method_level_annotation])) {
-//         $method_level_base_annotation[$method_level_annotation] = $instance->annotationList[$method_level_annotation];
-//     }
-// }
