@@ -31,6 +31,41 @@ abstract class AbstractTest implements TestInterface
         'error'     => array(),
     );
 
+    const OPERATOR_EQUAL                    = '==';
+    const OPERATOR_IDENTICAL                = '===';
+    const OPERATOR_NOT_EQUAL                = '!=';
+    const OPERATOR_NOT_EQUAL_ALIAS          = '<>';
+    const OPERATOR_NOT_IDENTICAL            = '!==';
+    const OPERATOR_LESS_THAN                = '<';
+    const OPERATOR_GREATER_THAN             = '>';
+    const OPERATOR_LESS_THAN_OR_EQUAL_TO    = '<=';
+    const OPERATOR_GREATER_THAN_OR_EQUAL_TO = '>=';
+
+    const OPERATOR_SAME                     = self::OPERATOR_EQUAL;
+    const OPERATOR_NOT_AME                  = self::OPERATOR_NOT_IDENTICAL;
+
+    const OP_EQ         = self::OPERATOR_EQUAL;
+    const OP_SAME       = self::OPERATOR_IDENTICAL;
+    const OP_N_EQ       = self::OPERATOR_NOT_EQUAL;
+    const OP_ALIAS_N_EQ = self::OPERATOR_NOT_EQUAL_ALIAS;
+    const OP_N_SAME     = self::OPERATOR_NOT_IDENTICAL;
+    const OP_LT         = self::OPERATOR_LESS_THAN;
+    const OP_GT         = self::OPERATOR_GREATER_THAN;
+    const OP_LT_EQ      = self::OPERATOR_LESS_THAN_OR_EQUAL_TO;
+    const OP_GT_EQ      = self::OPERATOR_GREATER_THAN_OR_EQUAL_TO;
+
+    protected static $OPERATOR_LIST = array(
+        self::OPERATOR_EQUAL                    => self::OPERATOR_EQUAL,
+        self::OPERATOR_IDENTICAL                => self::OPERATOR_IDENTICAL,
+        self::OPERATOR_NOT_EQUAL                => self::OPERATOR_NOT_EQUAL,
+        self::OPERATOR_NOT_EQUAL_ALIAS          => self::OPERATOR_NOT_EQUAL_ALIAS,
+        self::OPERATOR_NOT_IDENTICAL            => self::OPERATOR_NOT_IDENTICAL,
+        self::OPERATOR_LESS_THAN                => self::OPERATOR_LESS_THAN,
+        self::OPERATOR_GREATER_THAN             => self::OPERATOR_GREATER_THAN,
+        self::OPERATOR_LESS_THAN_OR_EQUAL_TO    => self::OPERATOR_LESS_THAN_OR_EQUAL_TO,
+        self::OPERATOR_GREATER_THAN_OR_EQUAL_TO => self::OPERATOR_GREATER_THAN_OR_EQUAL_TO,
+    );
+
     private $contexts = array();
 
     protected $preparedException = null;
@@ -70,78 +105,181 @@ abstract class AbstractTest implements TestInterface
     }
 
     /**
-     * 値を型判定付きでアサーションします。
+     * 値を型判定付きでsameアサーションします。
      *
      * @param   array   $expected   予想される値
      * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
      */
-    protected function assertSame($expected, $actual)
+    protected function assertSame($expected, $actual, $message = null)
     {
-        $this->log($expected === $actual, $expected, $actual);
+        $this->log($expected === $actual, $expected, $actual, $message);
     }
 
     /**
-     * 値を型判定付きでnoteアサーションします。
+     * 値を型判定付きでnot sameアサーションします。
      *
      * @param   array   $expected   予想される値
      * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
      */
-    protected function assertNotSame($expected, $actual)
+    protected function assertNotSame($expected, $actual, $message = null)
     {
-        $this->log($expected !== $actual, $expected, $actual);
+        $this->log($expected !== $actual, $expected, $actual, $message);
     }
 
     /**
-     * 値を型判定無しでアサーションします。
+     * 値を型判定無しでequalアサーションします。
      *
      * @param   array   $expected   予想される値
      * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
      */
-    protected function assertEquals($expected, $actual)
+    protected function assertEquals($expected, $actual, $message = null)
     {
-        $this->log($expected == $actual, $expected, $actual);
+        $this->log($expected == $actual, $expected, $actual, $message);
     }
 
     /**
-     * 値を型判定無しでnoteアサーションします。
+     * 値を型判定無しでnot equalアサーションします。
      *
      * @param   array   $expected   予想される値
      * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
      */
-    protected function assertNotEquals($expected, $actual)
+    protected function assertNotEquals($expected, $actual, $message = null)
     {
-        $this->log($expected != $actual, $expected, $actual);
+        $this->log($expected != $actual, $expected, $actual, $message);
+    }
+
+    /**
+     * 値を比較アサーションします。
+     *
+     * @param   array   $expected   予想される値
+     * @param   array   $actual     実際の値
+     * @param   string  $operator   オペレータ
+     * @param   string  $message    追加のメッセージ
+     */
+    protected function assertComparisons($expected, $actual, $operator, $message = null)
+    {
+        if (!isset(static::$OPERATOR_LIST[$operator])) {
+            throw new \Exception(sprintf('未知のオペレータを指定されました。operator:%s', TestRunner::toText($operator, 2)));
+        }
+        $operator   = static::$OPERATOR_LIST[$operator];
+
+        switch ($operator) {
+            case self::OPERATOR_EQUAL:
+                $status = $actual ==   $expected;
+                break;
+            case self::OPERATOR_IDENTICAL:
+                $status = $actual ===  $expected;
+                break;
+            case self::OPERATOR_NOT_EQUAL:
+                $status = $actual !=   $expected;
+                break;
+            case self::OPERATOR_NOT_EQUAL_ALIAS:
+                $status = $actual <>   $expected;
+                break;
+            case self::OPERATOR_NOT_IDENTICAL:
+                $status = $actual !==  $expected;
+                break;
+            case self::OPERATOR_LESS_THAN:
+                $status = $actual <    $expected;
+                break;
+            case self::OPERATOR_GREATER_THAN:
+                $status = $actual >    $expected;
+                break;
+            case self::OPERATOR_LESS_THAN_OR_EQUAL_TO:
+                $status = $actual <=   $expected;
+                break;
+            case self::OPERATOR_GREATER_THAN_OR_EQUAL_TO:
+                $status = $actual >=   $expected;
+                break;
+        }
+
+        $this->log($status, $expected, $actual, $message);
+    }
+
+    /**
+     * 実際の値が予想される値より少ないかアサーションします。
+     *
+     * @param   array   $expected   予想される値
+     * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
+     */
+    protected function assertLessThan($expected, $actual, $message = null)
+    {
+        $this->log($actual < $expected, $expected, $actual, $message);
+    }
+
+    /**
+     * 実際の値が予想される値より大きいかアサーションします。
+     *
+     * @param   array   $expected   予想される値
+     * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
+     */
+    protected function assertGreaterThan($expected, $actual, $message = null)
+    {
+        $this->log($actual > $expected, $expected, $actual, $message);
+    }
+
+    /**
+     * 実際の値が予想される値より少ないか等しいかアサーションします。
+     *
+     * @param   array   $expected   予想される値
+     * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
+     */
+    protected function assertLessThanOrEqualTo($expected, $actual, $message = null)
+    {
+        $this->log($actual <= $expected, $expected, $actual, $message);
+    }
+
+    /**
+     * 実際の値が予想される値より大きいか等しいかアサーションします。
+     *
+     * @param   array   $expected   予想される値
+     * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
+     */
+    protected function assertGreaterThanOrEqualTo($expected, $actual, $message = null)
+    {
+        $this->log($actual >= $expected, $expected, $actual, $message);
     }
 
     /**
      * 値がbool trueかアサーションします。
      *
      * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
      */
-    protected function assertTrue($actual)
+    protected function assertTrue($actual, $message = null)
     {
-        $this->log(true === $actual, true, $actual);
+        $this->log(true === $actual, true, $actual, $message);
     }
 
     /**
      * 値がbool falseかアサーションします。
      *
      * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
      */
-    protected function assertFalse($actual)
+    protected function assertFalse($actual, $message = null)
     {
-        $this->log(false === $actual, false, $actual);
+        $this->log(false === $actual, false, $actual, $message);
     }
 
     /**
      * 値にキーが含まれているかアサーションします。
      *
-     * @param   int|string  $key    キー
-     * @param   array       $array  配列
+     * @param   int|string  $key        キー
+     * @param   array       $array      配列
+     * @param   string      $message    追加のメッセージ
      */
-    protected function assertArrayHasKey($key, $array)
+    protected function assertArrayHasKey($key, $array, $message = null)
     {
-        $this->log(isset($array[$key]) || array_key_exists($key, $array), $key, $array);
+        $this->log(isset($array[$key]) || array_key_exists($key, $array), $key, $array, $message);
     }
 
     /**
@@ -149,10 +287,11 @@ abstract class AbstractTest implements TestInterface
      *
      * @param   int|string  $key    キー
      * @param   array       $array  配列
+     * @param   string  $message    追加のメッセージ
      */
-    protected function assertArrayNotHasKey($key, $array)
+    protected function assertArrayNotHasKey($key, $array, $message = null)
     {
-        $this->log(!(isset($array[$key]) || array_key_exists($key, $array)), $key, $array);
+        $this->log(!(isset($array[$key]) || array_key_exists($key, $array)), $key, $array, $message);
     }
 
     /**
@@ -160,10 +299,11 @@ abstract class AbstractTest implements TestInterface
      *
      * @param   array   $expected   予想される値
      * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
      */
-    protected function assertInstanceOf($expected, $actual)
+    protected function assertInstanceOf($expected, $actual, $message = null)
     {
-        $this->log($actual instanceof $expected, $expected, $actual);
+        $this->log($actual instanceof $expected, $expected, $actual, $message);
     }
 
     /**
@@ -171,25 +311,27 @@ abstract class AbstractTest implements TestInterface
      *
      * @param   array   $expected   予想される値
      * @param   array   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
      */
-    protected function assertIsSubclassOf($expected, $actual)
+    protected function assertIsSubclassOf($expected, $actual, $message = null)
     {
-        $this->log(is_subclass_of($actual, $expected), $expected, $actual);
+        $this->log(is_subclass_of($actual, $expected), $expected, $actual, $message);
     }
 
     /**
      * 事前準備済みの例外をアサーションします。
      *
-     * @param   mixed   $actual 実際の値
+     * @param   mixed   $actual     実際の値
+     * @param   string  $message    追加のメッセージ
      */
-    public function assertPreparedException($actual)
+    public function assertPreparedException($actual, $message = null)
     {
         if ($this->preparedException !== null) {
-            $this->assertException($this->preparedException, $actual);
+            $this->assertException($this->preparedException, $actual, $message);
         }
 
         if ($this->preparedExceptionMessage !== null) {
-            $this->assertExceptionMessage($this->preparedExceptionMessage, $actual);
+            $this->assertExceptionMessage($this->preparedExceptionMessage, $actual, $message);
         }
     }
 
@@ -198,11 +340,12 @@ abstract class AbstractTest implements TestInterface
      *
      * @param   string      $expected   予想される値
      * @param   \Exception  $actual     実際の例外
+     * @param   string      $message    追加のメッセージ
      */
-    protected function assertException($expected, $actual = null)
+    protected function assertException($expected, $actual = null, $message = null)
     {
         if ($actual !== null) {
-            $this->log($actual instanceof $expected, $expected, $actual);
+            $this->log($actual instanceof $expected, $expected, $actual, $message);
         } else {
             $this->preparedException    = $expected;
         }
@@ -213,12 +356,13 @@ abstract class AbstractTest implements TestInterface
      *
      * @param   string      $expected   予想される値
      * @param   \Exception  $actual     実際の例外
+     * @param   string      $message    追加のメッセージ
      */
-    protected function assertExceptionMessage($expected, $actual = null)
+    protected function assertExceptionMessage($expected, $actual = null, $message = null)
     {
         if ($actual !== null) {
             $actual = $actual->getMessage();
-            $this->log($expected === $actual, $expected, $actual);
+            $this->log($expected === $actual, $expected, $actual, $message);
         } else {
             $this->preparedExceptionMessage = $expected;
         }
@@ -230,8 +374,9 @@ abstract class AbstractTest implements TestInterface
      * @param   string          $expected       予想される値
      * @param   string          $value          実行する値
      * @param   array|string    $stream_specs   ストリームスペック
+     * @param   string          $message        追加のメッセージ
      */
-    protected function assertWriteStreamFilterSame($expected, $value, $stream_specs)
+    protected function assertWriteStreamFilterSame($expected, $value, $stream_specs, $message = null)
     {
         $fp     = @\fopen($stream_specs, 'ab');
         @\fwrite($fp, $value);
@@ -245,7 +390,7 @@ abstract class AbstractTest implements TestInterface
 
         @\fclose($fp);
 
-        $this->assertSame($expected, $actual);
+        $this->assertSame($expected, $actual, $message);
     }
 
     /**
@@ -254,8 +399,9 @@ abstract class AbstractTest implements TestInterface
      * @param   string          $expected       予想される値
      * @param   string          $value          実行する値
      * @param   array|string    $stream_specs   ストリームスペック
+     * @param   string          $message        追加のメッセージ
      */
-    protected function assertWriteStreamFilterNotSame($expected, $value, $stream_specs)
+    protected function assertWriteStreamFilterNotSame($expected, $value, $stream_specs, $message = null)
     {
         $fp     = @\fopen($stream_specs, 'ab');
         @\fwrite($fp, $value);
@@ -269,7 +415,7 @@ abstract class AbstractTest implements TestInterface
 
         @\fclose($fp);
 
-        $this->assertNotSame($expected, $actual);
+        $this->assertNotSame($expected, $actual, $message);
     }
 
     /**
@@ -279,8 +425,9 @@ abstract class AbstractTest implements TestInterface
      * @param   string          $csv_text           実行する値
      * @param   int             $stream_chunk_size  ストリームラッパーのチャンクサイズ
      * @param   string|array    $stream_specs       ストリームスペック
+     * @param   string          $message            追加のメッセージ
      */
-    protected function assertCsvInputStreamFilterSame($expected, $csv_text, $stream_chunk_size, $stream_specs)
+    protected function assertCsvInputStreamFilterSame($expected, $csv_text, $stream_chunk_size, $stream_specs, $message = null)
     {
         $fp     = @\fopen($stream_specs, 'ab');
 
@@ -301,7 +448,7 @@ abstract class AbstractTest implements TestInterface
 
         @\fclose($fp);
 
-        $this->assertSame($expected, $actual);
+        $this->assertSame($expected, $actual, $message);
     }
 
     /**
@@ -311,8 +458,9 @@ abstract class AbstractTest implements TestInterface
      * @param   array           $csv_data           実行する値
      * @param   int             $stream_chunk_size  ストリームラッパーのチャンクサイズ
      * @param   string|array    $stream_specs       ストリームスペック
+     * @param   string          $message            追加のメッセージ
      */
-    protected function assertCsvOutputStreamFilterSame($expected, $csv_data, $stream_chunk_size, $stream_specs)
+    protected function assertCsvOutputStreamFilterSame($expected, $csv_data, $stream_chunk_size, $stream_specs, $message = null)
     {
         $fp     = @\fopen($stream_specs, 'ab');
 
@@ -337,7 +485,7 @@ abstract class AbstractTest implements TestInterface
 
         @\fclose($fp);
 
-        $this->assertSame($expected, $actual);
+        $this->assertSame($expected, $actual, $message);
     }
 
     /**

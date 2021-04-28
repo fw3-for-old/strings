@@ -24,10 +24,12 @@ class ReflectionTestObject extends \ReflectionClass implements \IteratorAggregat
 {
     const ANNOTATION_PROCESS_FORK               = '@processFork';
     const ANNOTATION_INSTANCE_FORK              = '@instanceFork';
+    const ANNOTATION_STOP_WITH_ASSERTION_FAILED = '@stopWithAssertionFailed';
 
     protected static $ANNOTATION_MAP    = array(
-        self::ANNOTATION_PROCESS_FORK   => self::ANNOTATION_PROCESS_FORK,
-        self::ANNOTATION_INSTANCE_FORK  => self::ANNOTATION_INSTANCE_FORK,
+        self::ANNOTATION_PROCESS_FORK               => self::ANNOTATION_PROCESS_FORK,
+        self::ANNOTATION_INSTANCE_FORK              => self::ANNOTATION_INSTANCE_FORK,
+        self::ANNOTATION_STOP_WITH_ASSERTION_FAILED => self::ANNOTATION_STOP_WITH_ASSERTION_FAILED,
     );
 
     protected $annotationList;
@@ -115,6 +117,11 @@ class ReflectionTestObject extends \ReflectionClass implements \IteratorAggregat
     public function useInstanceFork()
     {
         return $this->useableByKey(self::ANNOTATION_INSTANCE_FORK);
+    }
+
+    public function annotationStopWithAssertionFailed()
+    {
+        return $this->useableByKey(self::ANNOTATION_STOP_WITH_ASSERTION_FAILED);
     }
 
     protected function useableByKey($key)

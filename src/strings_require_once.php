@@ -29,4 +29,5 @@ require_once sprintf('%s/builder/modifiers/security/EscapeModifier.php', __DIR__
 require_once sprintf('%s/builder/modifiers/datetime/StrtotimeModifier.php', __DIR__);
 require_once sprintf('%s/builder/modifiers/datetime/DefaultModifier.php', __DIR__);
 require_once sprintf('%s/builder/modifiers/datetime/DateModifier.php', __DIR__);
-require_once sprintf('%s/builder/StringBuilder.php', __DIR__);
+require_once sprintf('%s/builder/indentor/Indentor.php', __DIR__);
+require_once sprintf('%s/builder/builder/StringBuilder.php', __DIR__);

@@ -24,6 +24,7 @@ class ReflectionTestMethod extends \ReflectionMethod
 {
     const ANNOTATION_PROCESS_FORK               = '@processFork';
     const ANNOTATION_INSTANCE_FORK              = '@instanceFork';
+    const ANNOTATION_STOP_WITH_ASSERTION_FAILED = '@stopWithAssertionFailed';
     const ANNOTATION_TEST                       = '@test';
     const ANNOTATION_EXPECTED_EXCEPTION         = '@expectedException';
     const ANNOTATION_EXPECTED_EXCEPTION_MESSAGE = '@expectedExceptionMessage';
@@ -32,6 +33,7 @@ class ReflectionTestMethod extends \ReflectionMethod
     protected static $ANNOTATION_MAP   = array(
         self::ANNOTATION_PROCESS_FORK               => self::ANNOTATION_PROCESS_FORK,
         self::ANNOTATION_INSTANCE_FORK              => self::ANNOTATION_INSTANCE_FORK,
+        self::ANNOTATION_STOP_WITH_ASSERTION_FAILED => self::ANNOTATION_STOP_WITH_ASSERTION_FAILED,
         self::ANNOTATION_TEST                       => self::ANNOTATION_TEST,
         self::ANNOTATION_EXPECTED_EXCEPTION         => self::ANNOTATION_EXPECTED_EXCEPTION,
         self::ANNOTATION_EXPECTED_EXCEPTION_MESSAGE => self::ANNOTATION_EXPECTED_EXCEPTION_MESSAGE,
@@ -116,6 +118,11 @@ class ReflectionTestMethod extends \ReflectionMethod
     public function useInstanceFork()
     {
         return $this->useableByKey(self::ANNOTATION_INSTANCE_FORK);
+    }
+
+    public function annotationStopWithAssertionFailed()
+    {
+        return $this->useableByKey(self::ANNOTATION_STOP_WITH_ASSERTION_FAILED);
     }
 
     protected function useableByKey($key)
