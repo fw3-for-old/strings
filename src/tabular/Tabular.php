@@ -1134,14 +1134,21 @@ class Tabular
 
         $message    = [];
 
+        $base_indente   = 0;
+        if (is_int($this->baseIndente)) {
+            $base_indente   = $this->baseIndente;
+        } elseif (is_string($this->baseIndente) && isset(static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente])) {
+            $base_indente   = static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente];
+        }
+
         foreach ($this->header as $idx => $cell) {
-            $messages[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_width_map));
+            $messages[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_max_width_map));
         }
 
         foreach ($this->rows as $row) {
             $message    = [];
             foreach (array_values($row) as $idx => $cell) {
-                $messages[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_width_map));
+                $messages[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_max_width_map));
             }
             $messages[] = implode('', $message);
         }
