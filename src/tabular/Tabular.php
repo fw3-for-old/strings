@@ -225,7 +225,7 @@ class Tabular
 
         $this->characterEncoding    = isset($encoding) ? $encoding : (
             isset(static::$defaultCharacterEncoding) ? static::$defaultCharacterEncoding :mb_internal_encoding()
-        );
+            );
     }
 
     /**
@@ -839,6 +839,13 @@ class Tabular
         $cell_max_width_map  = $this->preBuildeCellMaxWidthMap;
 
         $stack  = array();
+
+        $base_indente   = 0;
+        if (is_int($this->baseIndente)) {
+            $base_indente   = $this->baseIndente;
+        } elseif (is_string($this->baseIndente) && isset(static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente])) {
+            $base_indente   = static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente];
+        }
 
         $base_indente   = 0;
         if (is_int($this->baseIndente)) {
