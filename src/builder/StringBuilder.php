@@ -222,7 +222,12 @@ class StringBuilder
     /**
      * @var string  文字列ビルダキャッシュ名
      */
-    protected $name;
+    protected $cacheName    = null;
+
+    /**
+     * @var string  文字列ビルダ名
+     */
+    protected $name = null;
 
     /**
      * @var array   変数値セット
@@ -321,14 +326,14 @@ class StringBuilder
     /**
      * construct
      *
-     * @param   string              $name           文字列ビルダキャッシュ名
+     * @param   string|null         $cache_name     文字列ビルダキャッシュ名
      * @param   array|object|null   $values         変数値セット
      * @param   array|null          $modifier_set   修飾子セット
      * @param   string|null         $encoding       エンコーディング
      */
-    protected function __construct($name, $values = null, $modifier_set = null, $encoding = null)
+    protected function __construct($cache_name, $values = null, $modifier_set = null, $encoding = null)
     {
-        $this->name         = $name;
+        $this->cacheName    = $cache_name;
 
         $this->values(isset($values) ? $values : static::$defaultValues);
 
@@ -360,7 +365,7 @@ class StringBuilder
     /**
      * factory
      *
-     * @param   string              $name           文字列ビルダキャッシュ名
+     * @param   string|array        $name           文字列ビルダ名
      * @param   array|object|null   $values         変数値セット
      * @param   array|null          $modifier_set   修飾子セット
      * @param   string|null         $encoding       エンコーディング
@@ -368,40 +373,60 @@ class StringBuilder
      */
     public static function factory($name = self::DEFAULT_NAME, $values = null, $modifier_set = null, $encoding = null)
     {
-        if (!isset(static::$instanceCache[$name])) {
-            static::$instanceCache[$name] = new static($name, $values, $modifier_set, $encoding);
+        $cache_name = is_array($name) ? implode('::', $name) : $name;
+
+        if (!isset(static::$instanceCache[$cache_name])) {
+            static::$instanceCache[$cache_name] = new static($cache_name, $values, $modifier_set, $encoding);
+            static::$instanceCache[$cache_name]->setName($name);
         }
 
-        return static::$instanceCache[$name];
+        return static::$instanceCache[$cache_name];
+    }
+
+    /**
+     * インスタンスをキャッシュしない使い捨てファクトリです。
+     *
+     * @param   array|object|null   $values         変数値セット
+     * @param   array|null          $modifier_set   修飾子セット
+     * @param   string|null         $encoding       エンコーディング
+     * @return  static  このインスタンス
+     */
+    public static function disposableFactory($values = null, $modifier_set = null, $encoding = null)
+    {
+        return new static(null, $values, $modifier_set, $encoding);
     }
 
     //==============================================
     // static methods
     //==============================================
     /**
-     * 指定されたビルダキャッシュ名に紐づくビルダインスタンスを返します。
+     * 指定されたビルダ名に紐づくビルダインスタンスを返します。
      *
-     * @param   string  $name   ビルダキャッシュ名
+     * @param   string|array    $name   ビルダ名
      * @return  static  このインスタンス
      */
     public static function get($name = self::DEFAULT_NAME)
     {
-        if (!isset(static::$instanceCache[$name])) {
+        $cache_name = is_array($name) ? implode('::', $name) : $name;
+
+        if (!isset(static::$instanceCache[$cache_name])) {
             throw new OutOfBoundsException(sprintf('StringBuilderキャッシュに無いキーを指定されました。name:%s', Convert::toDebugString($name)));
         }
 
-        return static::$instanceCache[$name];
+        return static::$instanceCache[$cache_name];
     }
 
     /**
-     * 指定されたビルダキャッシュ名に紐づくビルダキャッシュを削除します。
+     * 指定されたビルダ名に紐づくビルダキャッシュを削除します。
      *
-     * @param   string  $name   ビルダキャッシュ名
+     * @param   string|array    $name   ビルダ名
      * @return  string  このクラスパス
      */
     public static function remove($name)
     {
-        unset(static::$instanceCache[$name]);
+        $cache_name = is_array($name) ? implode('::', $name) : $name;
+
+        unset(static::$instanceCache[$cache_name]);
 
         return get_called_class();
     }
@@ -1019,7 +1044,28 @@ class StringBuilder
     /**
      * 文字列ビルダキャッシュ名を返します。
      *
-     * @return  string  文字列ビルダキャッシュ名
+     * @return  string|null 文字列ビルダキャッシュ名
+     */
+    public function getCacheName()
+    {
+        return $this->cacheName;
+    }
+
+    /**
+     * 文字列ビルダ名を設定します。
+     *
+     * @return  string  文字列ビルダ名
+     */
+    protected function setName($name)
+    {
+        $this->name = $name;
+        return $this;
+    }
+
+    /**
+     * 文字列ビルダ名を返します。
+     *
+     * @return  string|null 文字列ビルダ名
      */
     public function getName()
     {
@@ -1748,7 +1794,12 @@ class StringBuilder
                         $replace    = $values[$name];
                     }
 
-                    empty($modifier_list) ?: $replace = $this->modify($replace, $modifier_list);
+                    if (!empty($modifier_list)) {
+                        if (\is_string($replace) && false !== ($replace_begin = \mb_strrpos($replace, $this->enclosureBegin, 0, $this->characterEncoding)) && false !== \mb_strpos($replace, $this->enclosureEnd, $replace_begin, $this->characterEncoding)) {
+                            $replace    = $this->buildMessage($replace, $values, $converter);
+                        }
+                        $replace = $this->modify($replace, $modifier_list);
+                    }
 
                     if (\is_string($replace)) {
                         $before_message = $message;
@@ -1771,7 +1822,12 @@ class StringBuilder
                 $replace = $replace($name, $search, $values, $replace);
             }
 
-            empty($modifier_list) ?: $replace = $this->modify($replace, $modifier_list);
+            if (!empty($modifier_list)) {
+                if (\is_string($replace) && false !== ($replace_begin = \mb_strrpos($replace, $this->enclosureBegin, 0, $this->characterEncoding)) && false !== \mb_strpos($replace, $this->enclosureEnd, $replace_begin, $this->characterEncoding)) {
+                    $replace    = $this->buildMessage($replace, $values, $converter);
+                }
+                $replace = $this->modify($replace, $modifier_list);
+            }
 
             $before_message = $message;
             $message = \str_replace($search, $replace, $message);

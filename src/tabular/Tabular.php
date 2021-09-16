@@ -18,14 +18,9 @@
 
 namespace fw3_for_old\strings\tabular;
 
-use fw3_for_old\strings\builder\modifiers\ModifierInterface;
-use fw3_for_old\strings\builder\modifiers\security\EscapeModifier;
-use fw3_for_old\strings\builder\traits\converter\ConverterInterface;
 use fw3_for_old\strings\converter\Convert;
-use Closure;
 use InvalidArgumentException;
 use OutOfBoundsException;
-use fw3_for_old\strings\builder\StringBuilder;
 
 /**
  * 文字配列に対する表化を提供します。
@@ -36,19 +31,24 @@ class Tabular
     // constants
     //==============================================
     /**
-     * @const   string  文字列ビルダキャッシュのデフォルト名
+     * @var string  ビルダキャッシュのデフォルト名
      */
     const DEFAULT_NAME                  = ':default:';
 
     /**
      * @const   string  エンコーディングのデフォルト値
      */
-    const DEFAULT_CHARACTER_ENCODING    = null;
+    const DEFAULT_CHARACTER_ENCODING    = 'UTF-8';
 
     /**
-     * @const   string  タブ幅のデフォルト値
+     * @var int     タブ幅のデフォルト値
      */
     const DEFAULT_TAB_WIDTH = 4;
+
+    /**
+     * @var int     インデントレベルのデフォルト値
+     */
+    const DEFAULT_INDENTE_LEVEL     = 0;
 
     /**
      * @var int     インデント向け基底文字列長：`    public static `
@@ -125,44 +125,42 @@ class Tabular
     protected static $instanceCache  = array();
 
     /**
-     * @var string|null クラスデフォルトのエンコーディング
+     * @var string  クラスデフォルトのエンコーディング
      */
     protected static $defaultCharacterEncoding   = self::DEFAULT_CHARACTER_ENCODING;
 
     /**
-     * @var string|null クラスデフォルトのタブ幅のデフォルト値
+     * @var int     クラスデフォルトのタブ幅のデフォルト値
      */
     protected static $defaultTabWidth   = self::DEFAULT_TAB_WIDTH;
 
     /**
-     * @var callable[]  クラスデフォルトのインデントレベル
+     * @var int     クラスデフォルトのインデントレベル
      */
-    protected static $defaultIndenteLevel   = 0;
+    protected static $defaultIndenteLevel   = self::DEFAULT_INDENTE_LEVEL;
 
     /**
-     * @var array       クラスデフォルトのヘッダ
+     * @var array   クラスデフォルトのヘッダ
      */
-    protected static $defaultHeader = [];
-
-    protected static $defaultHeaderRule = null;
+    protected static $defaultHeader = array();
 
     /**
-     * @var array       クラスデフォルトのタブ化対象データ
+     * @var array   クラスデフォルトのタブ化対象データ
      */
-    protected static $defaultRows   = [];
-
-    protected static $defaultRowRule    = null;
-    protected static $defaultSeparator          = null;
-    protected static $defaultEnclosureBegin     = null;
-    protected static $defaultEnclosureEnd       = null;
+    protected static $defaultRows   = array();
 
     //==============================================
     // properties
     //==============================================
     /**
-     * @var string  Tabularキャッシュ名
+     * @var string|null Tabularキャッシュ名
      */
-    protected $name;
+    protected $cacheName    = null;
+
+    /**
+     * @var string|null Tabular名
+     */
+    protected $name = null;
 
     /**
      * @var string|null エンコーディング
@@ -180,25 +178,28 @@ class Tabular
     protected $indentLevel;
 
     /**
-     * @var array       ヘッダ
+     * @var array   ヘッダ
      */
-    protected $header   = [];
-
-    protected $headerRule   = null;
+    protected $header   = array();
 
     /**
-     * @var array       タブ化対象データ
+     * @var array   タブ化対象データ
      */
-    protected $rows     = [];
+    protected $rows     = array();
 
-    protected $rowRule          = null;
-    protected $separator        = null;
-    protected $enclosureBegin   = null;
-    protected $enclosureEnd     = null;
-
+    /**
+     * @var null|int    ベースとなるインデント量
+     */
     protected $baseIndente  = null;
 
-    protected $preBuildeMmaxWidthMap    = null;
+    /**
+     * @var null|array  列単位での最大幅マップ
+     */
+    protected $preBuildeMaxWidthMap     = null;
+
+    /**
+     * @var null|array  セル単位での最大幅マップ
+     */
     protected $preBuildeCellMaxWidthMap = null;
 
     //==============================================
@@ -207,25 +208,20 @@ class Tabular
     /**
      * construct
      *
-     * @param   string      $name           文字列ビルダキャッシュ名
+     * @param   string|null $cache_name     ビルダキャッシュ名
      * @param   int|null    $tab_width      タブ幅
      * @param   int|null    $indent_level   インデントレベル
      * @param   string|null $encoding       エンコーディング
      */
-    protected function __construct($name, $tab_width = null, $indent_level = null, $encoding = null)
+    protected function __construct($cache_name, $tab_width = null, $indent_level = null, $encoding = null)
     {
-        $this->name         = $name;
+        $this->cacheName    = $cache_name;
 
         $this->tabWidth(isset($tab_width) ? $tab_width : static::$defaultTabWidth);
         $this->indenteLevel(isset($indent_level) ? $indent_level : static::$defaultIndenteLevel);
 
         $this->header(static::$defaultHeader);
         $this->rows(static::$defaultRows);
-
-
-        $this->separator(static::$defaultSeparator);
-        $this->enclosureBegin(static::$defaultEnclosureBegin);
-        $this->enclosureEnd(static::$defaultEnclosureEnd);
 
         $this->characterEncoding    = isset($encoding) ? $encoding : (
             isset(static::$defaultCharacterEncoding) ? static::$defaultCharacterEncoding :mb_internal_encoding()
@@ -235,23 +231,22 @@ class Tabular
     /**
      * factory
      *
-     * @param   string|array    $name           文字列ビルダキャッシュ名
-     * @param   int|null        $tab_width      タブ幅
-     * @param   int|null        $indent_level   インデントレベル
-     * @param   string|null     $encoding       エンコーディング
+     * @param   string||array|null  $name           ビルダ名
+     * @param   int|null            $tab_width      タブ幅
+     * @param   int|null            $indent_level   インデントレベル
+     * @param   string|null         $encoding       エンコーディング
      * @return  static  このインスタンス
      */
     public static function factory($name = self::DEFAULT_NAME, $tab_width = null, $indent_level = null, $encoding = null)
     {
-        if (is_array($name)) {
-            $name   = implode('::', $name);
+        $cache_name = is_array($name) ? implode('::', $name) : $name;
+
+        if (!isset(static::$instanceCache[$cache_name])) {
+            static::$instanceCache[$cache_name] = new static($cache_name, $tab_width, $indent_level, $encoding);
+            static::$instanceCache[$cache_name]->setName($name);
         }
 
-        if (!isset(static::$instanceCache[$name])) {
-            static::$instanceCache[$name] = new static($name, $tab_width, $indent_level, $encoding);
-        }
-
-        return static::$instanceCache[$name];
+        return static::$instanceCache[$cache_name];
     }
 
     /**
@@ -271,29 +266,33 @@ class Tabular
     // static methods
     //==============================================
     /**
-     * 指定されたビルダキャッシュ名に紐づくビルダインスタンスを返します。
+     * 指定されたビルダ名に紐づくビルダインスタンスを返します。
      *
-     * @param   string  $name   ビルダキャッシュ名
+     * @param   string||array|null  $name   ビルダ名
      * @return  static  このインスタンス
      */
     public static function get($name = self::DEFAULT_NAME)
     {
-        if (!isset(static::$instanceCache[$name])) {
-            throw new OutOfBoundsException(sprintf('Tabularキャッシュに無いキーを指定されました。name:%s', Convert::toDebugString($name)));
+        $cache_name = is_array($name) ? implode('::', $name) : $name;
+
+        if (!isset(static::$instanceCache[$cache_name])) {
+            throw new OutOfBoundsException(sprintf('Tabularキャッシュに無いキーを指定されました。name:%s', Convert::toDebugString($name, 2)));
         }
 
-        return static::$instanceCache[$name];
+        return static::$instanceCache[$cache_name];
     }
 
     /**
      * 指定されたビルダキャッシュ名に紐づくビルダキャッシュを削除します。
      *
-     * @param   string  $name   ビルダキャッシュ名
+     * @param   string  $name   ビルダ名
      * @return  string  このクラスパス
      */
     public static function remove($name)
     {
-        unset(static::$instanceCache[$name]);
+        $cache_name = is_array($name) ? implode('::', $name) : $name;
+
+        unset(static::$instanceCache[$cache_name]);
 
         return get_called_class();
     }
@@ -312,12 +311,7 @@ class Tabular
         if (!is_array($default_settings)) {
             return array(
                 'header'                => static::defaultHeader(),
-                'header_rule'           => static::defaultHeaderRule(),
                 'rows'                  => static::defaultRows(),
-                'row_rule'              => static::defaultRowRule(),
-                'separator'             => static::defaultSeparator(),
-                'enclosure_begin'       => static::defaultEnclosureBegin(),
-                'enclosure_end'         => static::defaultEnclosureEnd(),
                 'tab_width'             => static::defaultTabWidth(),
                 'indent_level'          => static::defaultIndenteLevel(),
                 'character_encodingg'   => static::defaultCharacterEncoding(),
@@ -328,28 +322,8 @@ class Tabular
             static::defaultHeader($default_settings['header']);
         }
 
-        if (isset($default_settings['header_rule'])) {
-            static::defaultHeaderRule($default_settings['header_rule']);
-        }
-
         if (isset($default_settings['rows'])) {
             static::defaultRows($default_settings['rows']);
-        }
-
-        if (isset($default_settings['row_rule'])) {
-            static::defaultRowRule($default_settings['row_rule']);
-        }
-
-        if (isset($default_settings['separator'])) {
-            static::defaultSeparator($default_settings['separator']);
-        }
-
-        if (isset($default_settings['enclosure_start'])) {
-            static::defaultEnclosureBegin($default_settings['enclosure_start']);
-        }
-
-        if (isset($default_settings['enclosure_end'])) {
-            static::defaultEnclosureEnd($default_settings['enclosure_end']);
         }
 
         if (isset($default_settings['tab_width'])) {
@@ -388,26 +362,6 @@ class Tabular
     }
 
     /**
-     * クラスデフォルトのヘッダ罫線を設定・取得します。
-     *
-     * @param   string|array|\Closure|null  $header_rule    クラスデフォルトのヘッダ罫線
-     * @return  string|array|\Closure   このクラスパスまたはクラスデフォルトのヘッダ罫線
-     */
-    public static function defaultHeaderRule($header_rule = null)
-    {
-        if ($header_rule === null) {
-            return static::$defaultHeaderRule;
-        }
-
-        if (!is_string($header_rule) && !is_array($header_rule) && !($header_rule instanceof \Closure)) {
-            throw new \Exception(sprintf('利用できない値を指定されました。header_rule:%s', Convert::toDebugString($header_rule, 2)));
-        }
-
-        static::$defaultHeaderRule  = $header_rule;
-        return get_called_class();
-    }
-
-    /**
      * クラスデフォルトの行を設定・取得します。
      *
      * @param   array|\Closure|null $rows   クラスデフォルトの行
@@ -424,118 +378,6 @@ class Tabular
         }
 
         static::$defaultRows    = $rows;
-        return get_called_class();
-    }
-
-    /**
-     * クラスデフォルトの罫線を設定・取得します。
-     *
-     * @param   string|array|\Closure|null  $row_rule   クラスデフォルトの罫線
-     * @return  string|array|\Closure   このクラスパスまたはクラスデフォルトの罫線
-     */
-    public static function defaultRowRule($row_rule = null)
-    {
-        if ($row_rule === null) {
-            return static::$defaultRowRule;
-        }
-
-        if (!is_string($row_rule) && !is_array($row_rule) && !($row_rule instanceof \Closure)) {
-            throw new \Exception(sprintf('利用できない値を指定されました。row_rule:%s', Convert::toDebugString($row_rule, 2)));
-        }
-
-        static::$defaultRowRule = $row_rule;
-        return get_called_class();
-    }
-
-    /**
-     * クラスデフォルトの行エンクロージャを設定・取得します。
-     *
-     * @param   string|\Closure|null    $enclosure_begin    クラスデフォルトの行開始文字列
-     * @param   string|\Closure|null    $enclosure_end      クラスデフォルトの行終了文字列
-     * @return  string|array        このクラスパスまたはクラスデフォルトの行エンクロージャ
-     */
-    public static function defaultEnclosure($enclosure_begin = null, $enclosure_end = null)
-    {
-        if ($enclosure_begin === null) {
-            return array(
-                'begin' => static::$defaultEnclosureBegin,
-                'end'   => static::$defaultEnclosureEnd,
-            );
-        }
-
-        if (is_array($enclosure_begin)) {
-            $enclosure          = $enclosure_begin;
-            $enclosure_begin    = isset($enclosure['begin']) ? $enclosure['begin'] : (
-                isset($enclosure[0]) ? $enclosure[0] : null
-            );
-
-            $enclosure_end      = isset($enclosure['end']) ? $enclosure['end'] : (
-                isset($enclosure[1]) ? $enclosure[1] : null
-            );
-        }
-
-        static::defaultEnclosureBegin($enclosure_begin);
-        static::defaultEnclosureEnd($enclosure_end);
-        return get_called_class();
-    }
-
-    /**
-     * クラスデフォルトの行開始文字列を設定・取得します。
-     *
-     * @param   string|\Closure|null    $enclosure_begin    クラスデフォルトの行開始文字列
-     * @return  string|\Closure このクラスパスまたはクラスデフォルトの行開始文字列
-     */
-    public static function defaultEnclosureBegin($enclosure_begin = null)
-    {
-        if ($enclosure_begin === null) {
-            return static::$defaultEnclosureBegin;
-        }
-
-        if (!is_string($enclosure_begin) && !($enclosure_begin instanceof \Closure)) {
-            throw new \Exception(sprintf('利用できない値を指定されました。enclosure_begin:%s', Convert::toDebugString($enclosure_begin, 2)));
-        }
-
-        static::$defaultEnclosureBegin = $enclosure_begin;
-        return get_called_class();
-    }
-
-    /**
-     * クラスデフォルトの行終了文字列を設定・取得します。
-     *
-     * @param   string|\Closure|null    $enclosure_end  クラスデフォルトの行終了文字列
-     * @return  string|\Closure このクラスパスまたはクラスデフォルトの行終了文字列
-     */
-    public static function defaultEnclosureEnd($enclosure_end = null)
-    {
-        if ($enclosure_end === null) {
-            return static::$defaultEnclosureEnd;
-        }
-
-        if (!is_string($enclosure_end) && !is_array($enclosure_end) && !($enclosure_end instanceof \Closure)) {
-            throw new \Exception(sprintf('利用できない値を指定されました。enclosure_end:%s', Convert::toDebugString($enclosure_end, 2)));
-        }
-
-        static::$defaultEnclosureEnd = $enclosure_end;
-        return get_called_class();
-    }
-
-    /**
-     * クラスデフォルトの行セパレータを設定・取得します。
-     *
-     * @param   string|\Closure|null    $enclosure_end  クラスデフォルトの行セパレータ
-     * @return  string|\Closure このクラスパスまたはクラスデフォルトの行セパレータ
-     */
-    public static function defaultSeparator($separator = null)
-    {
-        if ($separator === null) {
-            return static::$defaultSeparator;
-        }
-
-        if (!is_string($separator) && !($separator instanceof \Closure)) {
-            throw new \Exception(sprintf('利用できない値を指定されました。enclosure_end:%s', Convert::toDebugString($separator, 2)));
-        }
-
-        static::$defaultSeparator = $separator;
         return get_called_class();
     }
 
@@ -618,12 +460,7 @@ class Tabular
         if (!is_array($settings)) {
             return array(
                 'header'                => $this->header(),
-                'header_rule'           => $this->headerRule(),
                 'rows'                  => $this->rows(),
-                'row_rule'              => $this->rowRule(),
-                'separator'             => $this->separator(),
-                'enclosure_begin'       => $this->enclosureBegin(),
-                'enclosure_end'         => $this->enclosureEnd(),
                 'tab_width'             => $this->tabWidth(),
                 'indent_level'          => $this->indenteLevel(),
                 'character_encodingg'   => $this->characterEncoding(),
@@ -634,28 +471,8 @@ class Tabular
             $this->header($settings['header']);
         }
 
-        if (isset($settings['header_rule'])) {
-            $this->headerRule($settings['header_rule']);
-        }
-
         if (isset($settings['rows'])) {
             $this->rows($settings['rows']);
-        }
-
-        if (isset($settings['row_rule'])) {
-            $this->rowRule($settings['row_rule']);
-        }
-
-        if (isset($settings['separator'])) {
-            $this->separator($settings['separator']);
-        }
-
-        if (isset($settings['enclosure_start'])) {
-            $this->enclosureBegin($settings['enclosure_start']);
-        }
-
-        if (isset($settings['enclosure_end'])) {
-            $this->enclosureEnd($settings['enclosure_end']);
         }
 
         if (isset($settings['tab_width'])) {
@@ -673,20 +490,47 @@ class Tabular
         return $this;
     }
 
+    /**
+     * 事前ビルド状態を初期化します。
+     *
+     * @void
+     */
     protected function initPreBuilding()
     {
-        $this->preBuildeMmaxWidthMap    = null;
+        $this->preBuildeMaxWidthMap     = null;
         $this->preBuildeCellMaxWidthMap = null;
     }
 
     /**
-     * 文字列ビルダキャッシュ名を返します。
+     * ビルダキャッシュ名を返します。
      *
-     * @return  string  文字列ビルダキャッシュ名
+     * @return  string  ビルダキャッシュ名
+     */
+    public function getCacheName()
+    {
+        return $this->cacheName;
+    }
+
+    /**
+     * ビルダ名を返します。
+     *
+     * @return  string  ビルダ名
      */
     public function getName()
     {
         return $this->name;
+    }
+
+    /**
+     * ビルダ名を設定します。
+     *
+     * @param   string  ビルダ名
+     * @return  static  このインスタンス
+     */
+    protected function setName($name)
+    {
+        $this->name = $name;
+        return $this;
     }
 
     /**
@@ -727,7 +571,7 @@ class Tabular
      * ヘッダを設定・取得します。
      *
      * @param   array|\Closure|null $header ヘッダ
-     * @return  string|array|\Closure   このインスタンスまたはヘッダ
+     * @return  static|array|\Closure   このインスタンスまたはヘッダ
      */
     public function header($header = null)
     {
@@ -746,32 +590,10 @@ class Tabular
     }
 
     /**
-     * ヘッダ罫線を設定・取得します。
-     *
-     * @param   string|array|\Closure|null  $header_rule    ヘッダ罫線
-     * @return  string|array|\Closure   このインスタンスまたはヘッダ罫線
-     */
-    public function headerRule($header_rule = null)
-    {
-        if ($header_rule === null) {
-            return $this->headerRule;
-        }
-
-        if (!is_string($header_rule) && !is_array($header_rule) && !($header_rule instanceof \Closure)) {
-            throw new \Exception(sprintf('利用できない値を指定されました。header_rule:%s', Convert::toDebugString($header_rule, 2)));
-        }
-
-        $this->initPreBuilding();
-
-        $this->headerRule  = $header_rule;
-        return $this;
-    }
-
-    /**
      * 行を設定・取得します。
      *
      * @param   array|\Closure|null $rows   行
-     * @return  string|array|\Closure   このインスタンスまたは行
+     * @return  static|array|\Closure   このインスタンスまたは行
      */
     public function rows($rows = null)
     {
@@ -790,130 +612,10 @@ class Tabular
     }
 
     /**
-     * 罫線を設定・取得します。
-     *
-     * @param   string|array|\Closure|null  $row_rule   罫線
-     * @return  string|array|\Closure   このインスタンスまたは罫線
-     */
-    public function rowRule($row_rule = null)
-    {
-        if ($row_rule === null) {
-            return $this->rowRule;
-        }
-
-        if (!is_string($row_rule) && !is_array($row_rule) && !($row_rule instanceof \Closure)) {
-            throw new \Exception(sprintf('利用できない値を指定されました。row_rule:%s', Convert::toDebugString($row_rule, 2)));
-        }
-
-        $this->initPreBuilding();
-
-        $this->rowRule = $row_rule;
-        return $this;
-    }
-
-    /**
-     * 行エンクロージャを設定・取得します。
-     *
-     * @param   string|\Closure|null    $enclosure_begin    行開始文字列
-     * @param   string|\Closure|null    $enclosure_end      行終了文字列
-     * @return  string|array        このインスタンスまたは行エンクロージャ
-     */
-    public function enclosure($enclosure_begin = null, $enclosure_end = null)
-    {
-        if ($enclosure_begin === null) {
-            return array(
-                'begin' => $this->enclosureBegin,
-                'end'   => $this->enclosureEnd,
-            );
-        }
-
-        if (is_array($enclosure_begin)) {
-            $enclosure          = $enclosure_begin;
-            $enclosure_begin    = isset($enclosure['begin']) ? $enclosure['begin'] : (
-                isset($enclosure[0]) ? $enclosure[0] : null
-            );
-
-            $enclosure_end      = isset($enclosure['end']) ? $enclosure['end'] : (
-                isset($enclosure[1]) ? $enclosure[1] : null
-            );
-        }
-
-        $this->enclosureBegin($enclosure_begin);
-        $this->enclosureEnd($enclosure_end);
-        return $this;
-    }
-
-    /**
-     * 行開始文字列を設定・取得します。
-     *
-     * @param   string|\Closure|null    $enclosure_begin    行開始文字列
-     * @return  string|\Closure このインスタンスまたは行開始文字列
-     */
-    public function enclosureBegin($enclosure_begin = null)
-    {
-        if ($enclosure_begin === null) {
-            return $this->enclosureBegin;
-        }
-
-        if (!is_string($enclosure_begin) && !($enclosure_begin instanceof \Closure)) {
-            throw new \Exception(sprintf('利用できない値を指定されました。enclosure_begin:%s', Convert::toDebugString($enclosure_begin, 2)));
-        }
-
-        $this->initPreBuilding();
-
-        $this->enclosureBegin = $enclosure_begin;
-        return $this;
-    }
-
-    /**
-     * 行終了文字列を設定・取得します。
-     *
-     * @param   string|\Closure|null    $enclosure_end  行終了文字列
-     * @return  string|\Closure このインスタンスまたは行終了文字列
-     */
-    public function enclosureEnd($enclosure_end = null)
-    {
-        if ($enclosure_end === null) {
-            return $this->enclosureEnd;
-        }
-
-        if (!is_string($enclosure_end) && !is_array($enclosure_end) && !($enclosure_end instanceof \Closure)) {
-            throw new \Exception(sprintf('利用できない値を指定されました。enclosure_end:%s', Convert::toDebugString($enclosure_end, 2)));
-        }
-
-        $this->initPreBuilding();
-
-        $this->enclosureEnd = $enclosure_end;
-        return $this;
-    }
-
-    /**
-     * 行セパレータを設定・取得します。
-     *
-     * @param   string|\Closure|null    $enclosure_end  行セパレータ
-     * @return  string|\Closure このインスタンスまたは行セパレータ
-     */
-    public function separator($separator = null)
-    {
-        if ($separator === null) {
-            return $this->separator;
-        }
-
-        if (!is_string($separator) && !($separator instanceof \Closure)) {
-            throw new \Exception(sprintf('利用できない値を指定されました。enclosure_end:%s', Convert::toDebugString($separator, 2)));
-        }
-
-        $this->initPreBuilding();
-
-        $this->separator = $separator;
-        return $this;
-    }
-
-    /**
      * タブ幅を設定・取得します。
      *
      * @param   int|string|null $tab_width  タブ幅
-     * @return  string|int  このインスタンスまたはタブ幅
+     * @return  static|int|string   このインスタンスまたはタブ幅
      */
     public function tabWidth($tab_width = null)
     {
@@ -935,7 +637,7 @@ class Tabular
      * インデントレベルを設定・取得します。
      *
      * @param   int|string|null $tab_width  インデントレベル
-     * @return  string|int  このインスタンスまたはインデントレベル
+     * @return  static|int|string   このインスタンスまたはインデントレベル
      */
     public function indenteLevel($indent_level = null)
     {
@@ -957,7 +659,7 @@ class Tabular
      * エンコーディングを設定・取得します。
      *
      * @param   string|null $character_encoding エンコーディング
-     * @return  string|null このインスタンスまたはエンコーディング
+     * @return  static|string|null  このインスタンスまたはエンコーディング
      */
     public function characterEncoding($character_encoding = null)
     {
@@ -985,10 +687,13 @@ class Tabular
     //==============================================
     /**
      * 文字列幅を取得します。
+     *
+     * @param   string  幅を取得したい文字列
+     * @return  int     文字列幅
      */
     public function stringWidth($string)
     {
-        $convert_charrcter_encoding = $this->characterEncoding === 'UTF-8';
+        $convert_charrcter_encoding = $this->characterEncoding !== 'UTF-8';
 
         if ($convert_charrcter_encoding) {
             $string = mb_convert_encoding($string, 'UTF-8', $this->characterEncoding);
@@ -999,12 +704,11 @@ class Tabular
             $char   = mb_substr($string, $i, 1, 'UTF-8');
 
             if ($char !== mb_convert_encoding($char, 'UTF-8', 'UTF-8')) {
-                return 0xFFFD;
+                $char_code  = 0xFFFD;
+            } else {
+                $ret    = mb_convert_encoding($char, 'UTF-32BE', 'UTF-8');
+                $char_code  = hexdec(bin2hex($ret));
             }
-
-            $ret    = mb_convert_encoding($char, 'UTF-32BE', 'UTF-8');
-
-            $char_code  = hexdec(bin2hex($ret));
 
             $width = 0;
             if (0x0000 <= $char_code && $char_code <= 0x0019) {
@@ -1034,8 +738,7 @@ class Tabular
      */
     public function buildMaxWidthMap()
     {
-        $indent_map     = [];
-        $max_width_map  = [];
+        $max_width_map  = array();
 
         foreach (array_values($this->header) as $idx => $node) {
             $max_width_map[$idx]    = $this->stringWidth($node);
@@ -1065,24 +768,22 @@ class Tabular
             }
         }
 
-        $this->preBuildeMmaxWidthMap    = $max_width_map;
+        $this->preBuildeMaxWidthMap = $max_width_map;
 
         return $max_width_map;
     }
 
     /**
-     * セル幅を構築し返します。
+     * インデントを加味したセル幅マップを構築し返します。
      *
-     * @param   string|int|null $base_indente   先行する文字列幅
-     * @param   array           $max_width_map  セル内最大文字列幅マップ
-     * @return number[]
+     * @return  array   インデントを加味したセル幅マップ
      */
     public function buildCellWidthMap()
     {
-        if ($this->preBuildeMmaxWidthMap === null) {
+        if ($this->preBuildeMaxWidthMap === null) {
             $this->buildMaxWidthMap();
         }
-        $max_width_map  = $this->preBuildeMmaxWidthMap;
+        $max_width_map  = $this->preBuildeMaxWidthMap;
 
         $base_indente   = 0;
         if (is_int($this->baseIndente)) {
@@ -1094,9 +795,12 @@ class Tabular
         $tab_width  = $this->tabWidth;
         $base_width = $base_indente + $this->indentLevel * $tab_width;
 
-        $cell_max_width_map = [];
-        foreach ($max_width_map as $idx => $cell_in_max_width) {
-            $cell_max_width_map[$idx] = 0 === ($indente = ($base_width + $cell_in_max_width) % $tab_width) ? $cell_in_max_width + $tab_width : $cell_in_max_width + $tab_width - $indente;
+        $cell_max_width_map = array();
+
+        if (is_array($max_width_map)) {
+            foreach ($max_width_map as $idx => $cell_in_max_width) {
+                $cell_max_width_map[$idx] = 0 === ($indente = ($base_width + $cell_in_max_width) % $tab_width) ? $cell_in_max_width + $tab_width : $cell_in_max_width + $tab_width - $indente;
+            }
         }
 
         $this->preBuildeCellMaxWidthMap = $cell_max_width_map;
@@ -1105,12 +809,14 @@ class Tabular
     }
 
     /**
+     * フィル用のリパート文字列を作成し返します。
      *
-     * @param string $repart
-     * @param number $base_indente
-     * @param unknown $max_width_map
+     * @param   string  $string 元の文字列
+     * @param   int     $idx    列番号
+     * @param   string  $repart リパート文字
+     * @return  string  フィル用のリパート文字列
      */
-    public function buildRepart($string, $idx, $repart = ' ', $vector = null)
+    public function buildRepart($string, $idx, $repart = ' ')
     {
         if ($this->preBuildeCellMaxWidthMap === null) {
             $this->buildCellWidthMap();
@@ -1123,7 +829,7 @@ class Tabular
     /**
      * ビルドします。
      *
-     * @return  string  ビルド後の文字列
+     * @return  array   ビルド後の文字配列スタック
      */
     public function build()
     {
@@ -1132,20 +838,27 @@ class Tabular
         }
         $cell_max_width_map  = $this->preBuildeCellMaxWidthMap;
 
-        $message    = [];
+        $stack  = array();
+
+        $base_indente   = 0;
+        if (is_int($this->baseIndente)) {
+            $base_indente   = $this->baseIndente;
+        } elseif (is_string($this->baseIndente) && isset(static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente])) {
+            $base_indente   = static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente];
+        }
 
         foreach ($this->header as $idx => $cell) {
-            $messages[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_width_map));
+            $stack[]    = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_max_width_map));
         }
 
         foreach ($this->rows as $row) {
-            $message    = [];
+            $message    = array();
             foreach (array_values($row) as $idx => $cell) {
-                $messages[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_width_map));
+                $message[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_max_width_map));
             }
-            $messages[] = implode('', $message);
+            $stack[] = implode('', $message);
         }
 
-        return $messages;
+        return $stack;
     }
 }

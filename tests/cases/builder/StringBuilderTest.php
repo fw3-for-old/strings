@@ -82,6 +82,68 @@ class StringBuilderTest extends AbstractTest
         $this->assertSame($expected, $actual);
     }
 
+    public function testBuildMessage()
+    {
+        $stringBuilder    = StringBuilder::factory();
+
+        //----------------------------------------------
+        $stringBuilder->values(array(
+            'part1' => 'part_1',
+            'part2' => 'part_2',
+            'expected'  => '{:part1}_{:part2}',
+        ));
+
+        $expected   = 'part_1_part_2';
+        $actual     = $stringBuilder->buildMessage('{:expected}');
+        $this->assertSame($expected, $actual);
+
+        //----------------------------------------------
+        $stringBuilder->values(array(
+            'part1' => '<part_1',
+            'part2' => 'part_2>',
+            'expected'  => '{:part1}_{:part2}',
+        ));
+
+        $expected   = '&lt;part_1_part_2&gt;';
+        $actual     = $stringBuilder->buildMessage('{:expected|escape}');
+        $this->assertSame($expected, $actual);
+
+        //----------------------------------------------
+        $stringBuilder->values(array(
+            'part1' => '<part_1',
+            'part2' => 'part_2>',
+            'expected'  => '{:part1|escape}_{:part2|escape}',
+        ));
+
+        $expected   = '&lt;part_1_part_2&gt;';
+        $actual     = $stringBuilder->buildMessage('{:expected}');
+        $this->assertSame($expected, $actual);
+
+        //----------------------------------------------
+        $stringBuilder->values(array(
+            'part1' => '\'part1',
+            'part2' => 'part2\'',
+            'expected'  => '<{:part1|escape(\'javascript\')}_{:part2|escape(\'javascript\')}>',
+        ));
+
+        $expected   = '&lt;\x27part1_part2\x27&gt;';
+        $actual     = $stringBuilder->buildMessage('{:expected|escape}');
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testDisposableFactory()
+    {
+        //----------------------------------------------
+        $expected   = StringBuilder::factory('same');
+        $actual     = StringBuilder::factory('same');
+        $this->assertSame($expected, $actual);
+
+        //----------------------------------------------
+        $expected   = StringBuilder::disposableFactory();
+        $actual     = StringBuilder::disposableFactory();
+        $this->assertNotSame($expected, $actual);
+    }
+
     public function testCharacterEncoding()
     {
         //==============================================
@@ -1250,9 +1312,28 @@ class StringBuilderTest extends AbstractTest
         $actual     = StringBuilder::factory()->getName();
         $this->assertSame($expected, $actual);
 
+        $actual     = StringBuilder::factory($expected)->getCacheName();
+        $this->assertSame($expected, $actual);
+
         //----------------------------------------------
         $expected   = 'testGetName';
         $actual     = StringBuilder::factory($expected)->getName();
+        $this->assertSame($expected, $actual);
+
+        $actual     = StringBuilder::factory($expected)->getCacheName();
+        $this->assertSame($expected, $actual);
+
+        //----------------------------------------------
+        $name       = array('test', 'get', 'name');
+
+        $builder    = StringBuilder::factory($name);
+
+        $expected   = $name;
+        $actual     = $builder->getName();
+        $this->assertSame($expected, $actual);
+
+        $expected   = implode('::', $name);
+        $actual     = $builder->getCacheName();
         $this->assertSame($expected, $actual);
     }
 
