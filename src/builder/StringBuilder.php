@@ -1824,6 +1824,10 @@ class StringBuilder
 
             if (!empty($modifier_list)) {
                 if (\is_string($replace) && false !== ($replace_begin = \mb_strrpos($replace, $this->enclosureBegin, 0, $this->characterEncoding)) && false !== \mb_strpos($replace, $this->enclosureEnd, $replace_begin, $this->characterEncoding)) {
+                    if ($message === $replace) {
+                        $this->enclosureBegin = $this->enclosureEnd;
+                        continue;
+                    }
                     $replace    = $this->buildMessage($replace, $values, $converter);
                 }
                 $replace = $this->modify($replace, $modifier_list);

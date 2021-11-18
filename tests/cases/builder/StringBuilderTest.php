@@ -80,6 +80,13 @@ class StringBuilderTest extends AbstractTest
         $expected   = '&quot;ickx&quot;';
         $actual     = $stringBuilder->buildMessage($message, $values, $converter);
         $this->assertSame($expected, $actual);
+
+        //----------------------------------------------
+        $expected   = 'message_{:pattern_a}';
+        $actual     = StringBuilder::disposableFactory()->buildMessage('message_{:pattern_a}', [
+            'pattern_a' => '{:pattern_a}'
+        ]);
+        $this->assertSame($expected, $actual);
     }
 
     public function testBuildMessage()
