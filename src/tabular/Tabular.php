@@ -198,6 +198,16 @@ class Tabular
     protected $preBuildeMaxWidthMap     = null;
 
     /**
+     * @var bool    列の全てがnullだった場合に列をスキップするかどうか
+     */
+    protected $nullColumnSkip   = false;
+
+    /**
+     * @var null|array  全てがnullでない列マップ
+     */
+    protected $notNullColumnMap = null;
+
+    /**
      * @var null|array  セル単位での最大幅マップ
      */
     protected $preBuildeCellMaxWidthMap = null;
@@ -499,6 +509,7 @@ class Tabular
     {
         $this->preBuildeMaxWidthMap     = null;
         $this->preBuildeCellMaxWidthMap = null;
+        $this->notNullColumnMap         = null;
     }
 
     /**
@@ -682,6 +693,22 @@ class Tabular
         return $this;
     }
 
+    /**
+     * 列の全てがnullだった場合に列をスキップするかどうかを設定・取得します。
+     *
+     * @param   bool    $null_column_skip   列の全てがnullだった場合に列をスキップするかどうか
+     * @return  static|bool このインスタンスまたは列の全てがnullだった場合に列をスキップするかどうか
+     */
+    public function nullColumnSkip($null_column_skip = false)
+    {
+        if ($null_column_skip === false && func_num_args() === 0) {
+            return $this->nullColumnSkip;
+        }
+
+        $this->nullColumnSkip   = $null_column_skip;
+        return $this;
+    }
+
     //==============================================
     // supporter
     //==============================================
@@ -738,9 +765,14 @@ class Tabular
      */
     public function buildMaxWidthMap()
     {
-        $max_width_map  = array();
+        $max_width_map      = array();
+        $not_null_col_map   = array();
 
         foreach (array_values($this->header) as $idx => $node) {
+            if ($node !== null) {
+                $not_null_col_map[$idx] = $idx;
+            }
+
             $max_width_map[$idx]    = $this->stringWidth($node);
         }
 
@@ -752,6 +784,10 @@ class Tabular
 
         if (empty($max_width_map)) {
             foreach (array_values(current($rows)) as $idx => $node) {
+                if ($node !== null) {
+                    $not_null_col_map[$idx] = $idx;
+                }
+
                 $node_width = $this->stringWidth($node);
                 if (isset($max_width_map[$idx])) {
                     $max_width_map[$idx] > $node_width ?: $max_width_map[$idx] = $node_width;
@@ -763,11 +799,16 @@ class Tabular
 
         foreach ($rows as $row) {
             foreach (array_values($row) as $idx => $node) {
+                if ($node !== null) {
+                    $not_null_col_map[$idx] = $idx;
+                }
+
                 $node_width = $this->stringWidth($node);
                 $max_width_map[$idx] > $node_width ?: $max_width_map[$idx] = $node_width;
             }
         }
 
+        $this->notNullColumnMap     = $not_null_col_map;
         $this->preBuildeMaxWidthMap = $max_width_map;
 
         return $max_width_map;
@@ -861,6 +902,9 @@ class Tabular
         foreach ($this->rows as $row) {
             $message    = array();
             foreach (array_values($row) as $idx => $cell) {
+                if ($this->nullColumnSkip && !isset($this->notNullColumnMap[$idx])) {
+                    continue;
+                }
                 $message[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_max_width_map));
             }
             $stack[] = implode('', $message);
