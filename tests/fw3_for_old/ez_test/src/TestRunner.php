@@ -130,6 +130,11 @@ class TestRunner
     protected $startMicrotime   = 0;
 
     /**
+     * @var array   実行時パラメータ
+     */
+    protected $parameters   = array();
+
+    /**
      * @var array   TestRunnerがもつコンテキスト情報
      * TestRunner生成時のコンテキスト情報をテストクラスに渡したい場合に使う
      */
@@ -245,9 +250,19 @@ class TestRunner
         $start_time = \explode('.', $this->startMicrotime);
         $start_time = \sprintf('%s.%s', \date('Y/m/d H:i:s', $start_time[0]), isset($start_time[1]) ? $start_time[1] : 0);
 
+        $shortopts = array(
+            'g:',
+        );
+
+        $longopts  = array(
+            'group:',
+        );
+
+        $this->parameters   = \getopt(implode('', $shortopts), $longopts);
+
         if ($this->stdOutMode === self::STD_OUT_MODE_TEXT) {
             echo '================================================', \PHP_EOL;
-            echo ' fw3_for_old/ez_test.', \PHP_EOL;
+            echo ' fw3_for_old/ez_test on PHP Version ', \PHP_VERSION, \PHP_EOL;
             echo \sprintf(' target test cases => %s', $this->testCaseRootDir), \PHP_EOL;
             echo '================================================', \PHP_EOL;
             echo \sprintf(' start time  : %s', $start_time), \PHP_EOL;
@@ -291,6 +306,7 @@ class TestRunner
             ),
             'std_out'               => $std_out,
             'logs'                  => $logs,
+            'php_version'           => \PHP_VERSION,
         );
 
         if ($this->stdOutMode === self::STD_OUT_MODE_TEXT) {
@@ -343,7 +359,7 @@ class TestRunner
         $exec_time          = $time['exec_time'];
 
         echo '================================================', \PHP_EOL;
-        echo ' fw3_for_old/ez_test.', \PHP_EOL;
+        echo ' fw3_for_old/ez_test on PHP Version ', \PHP_VERSION, \PHP_EOL;
         echo \sprintf(' target test cases => %s', $test_case_root_dir), \PHP_EOL;
         echo '================================================', \PHP_EOL;
         echo \sprintf(' start time  : %s', $start_time), \PHP_EOL;
@@ -671,24 +687,37 @@ class TestRunner
 
             /** @var AbstractTest $testClass */
             $testClass  = new $test_class($this->contexts);
+            $testClass->splitConstract();
+
             $testClass->initialize();
+            $testClass->splitInitialize();
+
             $testClass->setupTest();
+            $testClass->splitSetup();
 
             /** @var AbstractTest $baseTestClass */
             $baseTestClass  = $testClass;
 
-            $reflectionTestObject    = ReflectionTestObject::factory($testClass);
+            $reflectionTestObject    = ReflectionTestObject::factory($testClass, $this->parameters);
+
+            if (!$reflectionTestObject->hasTestMethods()) {
+                continue;
+            }
 
             $base_use_proccess_fork = !$is_proccess_fork && $reflectionTestObject->useProcessFork();
             $base_use_instance_fork = $reflectionTestObject->useInstanceFork();
 
             $need_teardown_test_class   = true;
 
+            $testClass->splitStartup();
+
             /** @var ReflectionTestMethod $reflectionTestMethod */
             foreach ($reflectionTestObject as $reflectionTestMethod) {
                 if ($is_proccess_fork && $this->targetTestMethod !== $reflectionTestMethod->name) {
                     continue;
                 }
+
+                $testClass->splitTestStart($reflectionTestMethod->name);
 
                 if (!$is_proccess_fork && $reflectionTestMethod->useProcessFork() || $base_use_proccess_fork) {
                     if ($php_binary === null) {
@@ -729,6 +758,7 @@ class TestRunner
                     $return_var = null;
 
                     \exec($command, $output, $return_var);
+                    $testClass->splitTest($reflectionTestMethod->name);
 
                     if ($return_var === 0 && isset($output[0]) && null !== ($logs = \json_decode($output[0], true))) {
                         $testClass->mergeLogs($logs['logs'][$test_class]);
@@ -739,6 +769,8 @@ class TestRunner
                     }
 
                     $need_teardown_test_class   = true;
+
+                    $testClass->splitTestEnd($reflectionTestMethod->name);
 
                     continue;
                 }
@@ -753,13 +785,17 @@ class TestRunner
 
                 try {
                     $testClass->{$reflectionTestMethod->name}();
+                    $testClass->splitTest($reflectionTestMethod->name);
                 } catch (\Exception $e) {
+                    $testClass->splitTest($reflectionTestMethod->name);
                     if ($testClass->hasPreparedException()) {
                         $testClass->assertPreparedException($e);
                     } else {
+                        $testClass->cleanupPreparedException();
                         throw $e;
                     }
                 }
+                $testClass->cleanupPreparedException();
 
                 $testClass->teardownTest();
 
@@ -774,6 +810,8 @@ class TestRunner
                 } else {
                     $need_teardown_test_class   = true;
                 }
+
+                $testClass->splitTestEnd($reflectionTestMethod->name);
             }
 
             if ($need_teardown_test_class) {
@@ -781,6 +819,8 @@ class TestRunner
             }
 
             $testClass->finalize();
+
+            $testClass->splitFinish();
 
             $result[$test_class]    = $testClass->getLogs();
         }
@@ -798,6 +838,7 @@ class TestRunner
         $success_total  = 0;
         $failed_total   = 0;
         $error_total    = 0;
+        $is_error       = false;
         $skip_total     = 0;
 
         $detail_message = array();
@@ -807,6 +848,7 @@ class TestRunner
             $failed_count   = !empty($test_log['failed']) ? \count($test_log['failed']) : 0;
             $error_count    = !empty($test_log['error']) ? \count($test_log['error']) : 0;
             $skip_count     = !empty($test_log['skip']) ? \count($test_log['skip']) : 0;
+            $split          = $test_log['split'];
 
             $total          = $success_count + $failed_count + $error_count + $skip_count;
 
@@ -829,13 +871,14 @@ class TestRunner
                 }
 
                 $message[]  = \sprintf(
-                    '  test %s: %s / %s%s%s => %s',
+                    '  test %s: %s / %s%s%s => %s (%ssec)',
                     $is_error ? 'failed ' : 'success',
                     $success_count + $skip_count,
                     $total,
                     $skip_count !== 0 ? \sprintf(' (skiped: %d)', $skip_count) : '',
                     $is_error ? \sprintf(' (PHP Error: %d, failed: %d)', $error_count, $failed_count) : '',
-                    $class
+                    $class,
+                    substr((string) $split['finish'] - $split['constract'], 0, 7)
                 );
 
                 if (!empty($test_log['skip'])) {
@@ -931,12 +974,15 @@ class TestRunner
 
                 return \sprintf('[%s]', \implode(', ', $ret));
             case 'object':
-                \ob_start();
-                \var_dump($var);
-                $object_status  = \ob_get_clean();
-
-                $object_status  = \substr($object_status, 0, \strpos($object_status, ' ('));
-                $object_status  = \sprintf('object(%s)', \substr($object_status, 6));
+                if (!function_exists("\\spl_object_id")) {
+                    \ob_start();
+                    \var_dump($var);
+                    $object_status = \ob_get_clean();
+                    $object_status = \substr($object_status, 0, \strpos($object_status, ' ('));
+                    $object_status = \sprintf('object(%s)', \substr($object_status, 6));
+                } else {
+                    $object_status = \sprintf('object(%s#%d)', \get_class($var), \spl_object_id($var));
+                }
 
                 if ($depth < 1) {
                     return $object_status;

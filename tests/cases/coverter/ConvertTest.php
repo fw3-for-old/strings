@@ -401,14 +401,14 @@ class ConvertTest extends AbstractTest
         //----------------------------------------------
         $value  = new MockForConvertTest();
 
-        if (!function_exists('spl_object_id')) {
-            ob_start();
-            var_dump($value);
-            $object_status = ob_get_clean();
-            $object_status = substr($object_status, 0, strpos($object_status, ' ('));
-            $object_status = sprintf('object%s', substr($object_status, 6));
+        if (!function_exists("\\spl_object_id")) {
+            \ob_start();
+            \var_dump($value);
+            $object_status = \ob_get_clean();
+            $object_status = \substr($object_status, 0, \strpos($object_status, ' ('));
+            $object_status = \sprintf('object(%s)', \substr($object_status, 6));
         } else {
-            $object_status = sprintf('object(%s)#%d', get_class($value), spl_object_id($value));
+            $object_status = \sprintf('object(%s#%d)', \get_class($value), \spl_object_id($value));
         }
 
         $expected   = $object_status;
@@ -492,6 +492,16 @@ class ConvertTest extends AbstractTest
         //----------------------------------------------
         $mock   = new MockForConvertTest();
 
+        if (!function_exists("\\spl_object_id")) {
+            \ob_start();
+            \var_dump($mock);
+            $object_status = \ob_get_clean();
+            $object_status = \substr($object_status, 0, \strpos($object_status, ' ('));
+            $object_status = \sprintf('object(%s)', \substr($object_status, 6));
+        } else {
+            $object_status = \sprintf('object(%s#%d)', \get_class($mock), \spl_object_id($mock));
+        }
+
         $value  = array(
             $mock,
             array(
@@ -511,29 +521,19 @@ class ConvertTest extends AbstractTest
             ),
         );
 
-        if (!function_exists('spl_object_id')) {
-            ob_start();
-            var_dump($value);
-            $object_status = ob_get_clean();
-            $object_status = substr($object_status, 0, strpos($object_status, ' ('));
-            $object_status = sprintf('object%s', substr($object_status, 6));
-        } else {
-            $object_status = sprintf('object(%s)#%d', get_class($value), spl_object_id($value));
-        }
-
-        $expected   = '[
-    0   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
+        $expected   = sprintf('[
+    0   => %1$s,
     1   => [
-        0   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
-        1   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
+        0   => %1$s,
+        1   => %1$s,
         2   => [
-            0   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
-            1   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
-            2   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
+            0   => %1$s,
+            1   => %1$s,
+            2   => %1$s,
             3   => Array,
         ],
     ],
-]';
+]', $object_status);
         $actual     = Convert::toDebugString($value, 3, array(
             'prettify'      => true,
             'object_detail' => false,

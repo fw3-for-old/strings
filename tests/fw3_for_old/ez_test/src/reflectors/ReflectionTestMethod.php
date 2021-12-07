@@ -29,6 +29,8 @@ class ReflectionTestMethod extends \ReflectionMethod
     const ANNOTATION_EXPECTED_EXCEPTION         = '@expectedException';
     const ANNOTATION_EXPECTED_EXCEPTION_MESSAGE = '@expectedExceptionMessage';
     const ANNOTATION_DATA_PROVIDER              = '@dataProvider';
+    const ANNOTATION_GROUP                      = '@group';
+    const ANNOTATION_EXCLUSION_GROUP            = '@exclusionGroup';
 
     protected static $ANNOTATION_MAP   = array(
         self::ANNOTATION_PROCESS_FORK               => self::ANNOTATION_PROCESS_FORK,
@@ -38,6 +40,8 @@ class ReflectionTestMethod extends \ReflectionMethod
         self::ANNOTATION_EXPECTED_EXCEPTION         => self::ANNOTATION_EXPECTED_EXCEPTION,
         self::ANNOTATION_EXPECTED_EXCEPTION_MESSAGE => self::ANNOTATION_EXPECTED_EXCEPTION_MESSAGE,
         self::ANNOTATION_DATA_PROVIDER              => self::ANNOTATION_DATA_PROVIDER,
+        self::ANNOTATION_GROUP                      => self::ANNOTATION_GROUP,
+        self::ANNOTATION_EXCLUSION_GROUP            => self::ANNOTATION_EXCLUSION_GROUP,
     );
 
     protected $annotationList   = array();
@@ -46,9 +50,16 @@ class ReflectionTestMethod extends \ReflectionMethod
 
     protected $isTestMethod;
 
-    public static function factory($reflectionTestClass, $method)
+    /**
+     * @var array   実行時パラメータ
+     */
+    protected $parameters   = array();
+
+    public static function factory($reflectionTestClass, $method, $parameters = array())
     {
         $instance   = new static($reflectionTestClass->getName(), $method);
+
+        $instance->parameters   = $parameters;
 
         $instance->reflectionTestClass  = $reflectionTestClass;
 
@@ -125,6 +136,33 @@ class ReflectionTestMethod extends \ReflectionMethod
         return $this->useableByKey(self::ANNOTATION_STOP_WITH_ASSERTION_FAILED);
     }
 
+    public function useGroup()
+    {
+        return $this->useableByKey(self::ANNOTATION_GROUP);
+    }
+
+    public function useExclusionGroup()
+    {
+        return $this->useableByKey(self::ANNOTATION_EXCLUSION_GROUP);
+    }
+
+    public function canTestByGroup()
+    {
+        if (isset($this->parameters['group'])) {
+            if ($this->useExclusionGroup()) {
+                return $this->parameters['group'] !== $this->annotationList[self::ANNOTATION_EXCLUSION_GROUP]['options'][0];
+            }
+
+            if ($this->useGroup()) {
+                return $this->parameters['group'] === $this->annotationList[self::ANNOTATION_GROUP]['options'][0];
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
     protected function useableByKey($key)
     {
         if (!isset($this->annotationList[$key])) {
@@ -132,7 +170,17 @@ class ReflectionTestMethod extends \ReflectionMethod
         }
 
         if (isset($this->annotationList[$key]['options'][0])) {
-            return $this->annotationList[$key]['options'][0] === true;
+            if (is_bool($this->annotationList[$key]['options'][0])) {
+                return $this->annotationList[$key]['options'][0] === true;
+            }
+
+            if (is_string($this->annotationList[$key]['options'][0])) {
+                switch ($key) {
+                    case static::ANNOTATION_GROUP:
+                    case static::ANNOTATION_EXCLUSION_GROUP:
+                        return true;
+                }
+            }
         }
 
         return true;

@@ -548,14 +548,14 @@ class Convert
                     return sprintf('[%s]', implode(', ', $ret));
                 }
             case 'object':
-                if (!function_exists('spl_object_id')) {
-                    ob_start();
-                    var_dump($var);
-                    $object_status = ob_get_clean();
-                    $object_status = substr($object_status, 0, strpos($object_status, ' ('));
-                    $object_status = sprintf('object%s', substr($object_status, 6));
+                if (!function_exists("\\spl_object_id")) {
+                    \ob_start();
+                    \var_dump($var);
+                    $object_status = \ob_get_clean();
+                    $object_status = \substr($object_status, 0, \strpos($object_status, ' ('));
+                    $object_status = \sprintf('object(%s)', \substr($object_status, 6));
                 } else {
-                    $object_status = sprintf('object(%s)#%d', get_class($var), spl_object_id($var));
+                    $object_status = \sprintf('object(%s#%d)', \get_class($var), \spl_object_id($var));
                 }
 
                 if ($depth < 1 || !$object_detail) {
