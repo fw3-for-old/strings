@@ -20,6 +20,7 @@ namespace fw3_for_old\strings\converter;
 
 use InvalidArgumentException;
 use ReflectionObject;
+use fw3_for_old\strings\tabular\Tabular;
 
 /**
  * 変数の文字列変換メソッド群です。
@@ -87,6 +88,16 @@ class Convert
      * @const   string  JavaScript用エンコーディング
      */
     const JAVASCRIPT_ENCODING    = 'UTF-8';
+
+    /**
+     * @const   int     toDebugStringにおけるデフォルトインデントレベル
+     */
+    const TO_DEBUG_STRING_DEFAULT_INDENT_LEVEL  = 0;
+
+    /**
+     * @const   int     toDebugStringにおけるデフォルトインデント幅
+     */
+    const TO_DEBUG_STRING_DEFAULT_INDENT_WIDTH  = 4;
 
     //==============================================
     // methods
@@ -451,13 +462,45 @@ class Convert
     /**
      * 変数に関する情報を文字列にして返します。
      *
-     * @param   mixed   $var    変数に関する情報を文字列にしたい変数
-     * @param   int     $depth  変数に関する情報を文字列にする階層の深さ
+     * @param   mixed           $var        変数に関する情報を文字列にしたい変数
+     * @param   int             $depth      変数に関する情報を文字列にする階層の深さ
+     * @param   array|bool|null $options    オプション
+     *  [
+     *      'prettify'      => bool 出力結果をprettifyするかどうか
+     *      'indent_level'  => int  prettify時の開始インデントレベル
+     *      'indent_width'  => int  prettify時のインデント幅
+     *  ]
      * @return  string  変数に関する情報
      */
-    public static function toDebugString($var, $depth = 0)
+    public static function toDebugString($var, $depth = 0, $options = array())
     {
         $type = gettype($var);
+
+        if (is_array($options)) {
+            if (!isset($options['prettify'])) {
+                $options['prettify']    = isset($options['indent_level']) || isset($options['indent_width']);
+            }
+
+            if (!isset($options['indent_level'])) {
+                $options['indent_level']    = $options['prettify'] ? static::TO_DEBUG_STRING_DEFAULT_INDENT_LEVEL : null;
+            }
+
+            if (!isset($options['indent_width'])) {
+                $options['indent_width']    = $options['prettify'] ? static::TO_DEBUG_STRING_DEFAULT_INDENT_WIDTH : null;
+            }
+        } elseif (is_bool($options) && $options) {
+            $options    = array(
+                'prettify'      => true,
+                'indent_level'  => static::TO_DEBUG_STRING_DEFAULT_INDENT_LEVEL,
+                'indent_width'  => static::TO_DEBUG_STRING_DEFAULT_INDENT_WIDTH,
+            );
+        } else {
+            $options    = array(
+                'prettify'      => false,
+                'indent_level'  => null,
+                'indent_width'  => null,
+            );
+        }
 
         switch ($type) {
             case 'boolean':
@@ -476,18 +519,42 @@ class Convert
                     return 'Array';
                 }
                 --$depth;
-                $ret = array();
-                foreach ($var as $key => $value) {
-                    $ret[] = sprintf('%s => %s', static::toDebugString($key), static::toDebugString($value, $depth));
-                }
-                return sprintf('[%s]', implode(', ', $ret));
-            case 'object':
-                ob_start();
-                var_dump($var);
-                $object_status = ob_get_clean();
 
-                $object_status = substr($object_status, 0, strpos($object_status, ' ('));
-                $object_status = sprintf('object(%s)', substr($object_status, 6));
+                if ($options['prettify']) {
+                    $next_options   = $options;
+
+                    $tabular        = Tabular::disposableFactory($next_options['indent_width'], $next_options['indent_level'])->trimEolSpace(true);
+
+                    $indent  = str_repeat(' ', $next_options['indent_width'] * $next_options['indent_level']);
+
+                    ++$next_options['indent_level'];
+
+                    foreach ($var as $key => $value) {
+                        $tabular->addRow(array(
+                            $indent,
+                            static::toDebugString($key),
+                            sprintf('=> %s,', static::toDebugString($value, $depth, $next_options)),
+                        ));
+                    }
+
+                    return sprintf('[%s%s%s%s]', "\n", implode("\n", $tabular->build()), "\n", $indent);
+                } else {
+                    $ret = array();
+                    foreach ($var as $key => $value) {
+                        $ret[] = sprintf('%s => %s', static::toDebugString($key), static::toDebugString($value, $depth, $options));
+                    }
+                    return sprintf('[%s]', implode(', ', $ret));
+                }
+            case 'object':
+                if (!function_exists('spl_object_id')) {
+                    ob_start();
+                    var_dump($var);
+                    $object_status = ob_get_clean();
+                    $object_status = substr($object_status, 0, strpos($object_status, ' ('));
+                    $object_status = sprintf('object%s', substr($object_status, 6));
+                } else {
+                    $object_status = sprintf('object(%s)#%d', get_class($var), spl_object_id($var));
+                }
 
                 if ($depth < 1) {
                     return $object_status;
@@ -504,18 +571,68 @@ class Convert
                     $tmp_properties[$state][$modifier][] = $property;
                 }
 
-                $properties = array();
-                foreach (array('static', 'dynamic') as $state) {
-                    $state_text = $state === 'static' ? 'static ' : '';
-                    foreach (array('public', 'protected', 'private', 'unknown modifier') as $modifier) {
-                        foreach (isset($tmp_properties[$state][$modifier]) ? $tmp_properties[$state][$modifier] : array() as $property) {
-                            $property->setAccessible(true);
-                            $properties[] = sprintf('%s%s %s = %s', $state_text, $modifier, static::toDebugString($property->getName()), static::toDebugString($property->getValue($var), $depth));
+                if ($options['prettify']) {
+                    $next_options   = $options;
+
+                    $staticTabular  = Tabular::disposableFactory($next_options['indent_width'], $next_options['indent_level'])->trimEolSpace(true);
+                    $dynamicTabular = Tabular::disposableFactory($next_options['indent_width'], $next_options['indent_level'])->trimEolSpace(true);
+
+                    $indent  = str_repeat(' ', $next_options['indent_width'] * $next_options['indent_level']);
+
+                    ++$next_options['indent_level'];
+
+                    $properties = array();
+                    foreach (array('static', 'dynamic') as $state) {
+                        $is_static  = $state === 'static';
+
+                        foreach (array('public', 'protected', 'private', 'unknown modifier') as $modifier) {
+                            foreach (isset($tmp_properties[$state][$modifier]) ? $tmp_properties[$state][$modifier] : array() as $property) {
+                                $property->setAccessible(true);
+
+                                if ($is_static) {
+                                    $staticTabular->addRow(array(
+                                        $indent,
+                                        'static',
+                                        $modifier,
+                                        sprintf('$%s', $property->getName()),
+                                        sprintf('= %s,', static::toDebugString($property->getValue($var), $depth, $next_options)),
+                                    ));
+                                } else {
+                                    $dynamicTabular->addRow(array(
+                                        $indent,
+                                        $modifier,
+                                        sprintf('$%s', $property->getName()),
+                                        sprintf('= %s,', static::toDebugString($property->getValue($var), $depth, $next_options)),
+                                    ));
+                                }
+                            }
                         }
                     }
-                }
 
-                return sprintf('%s {%s}', $object_status, implode(', ', $properties));
+                    $rows   = array();
+                    foreach ($staticTabular->build() as $tab_row) {
+                        $rows[] = $tab_row;
+                    }
+
+                    foreach ($dynamicTabular->build() as $tab_row) {
+                        $rows[] = $tab_row;
+                    }
+
+                    return sprintf('%s {%s%s%s%s}', $object_status, "\n", implode("\n", $rows), "\n", $indent);
+                } else {
+                    $properties = array();
+                    foreach (array('static', 'dynamic') as $state) {
+                        $state_text = $state === 'static' ? ' static' : '';
+                        foreach (array('public', 'protected', 'private', 'unknown modifier') as $modifier) {
+                            foreach (isset($tmp_properties[$state][$modifier]) ? $tmp_properties[$state][$modifier] : array() as $property) {
+                                $property->setAccessible(true);
+                                $properties[] = sprintf('%s%s %s = %s', $modifier, $state_text, sprintf('$%s', $property->getName()), static::toDebugString($property->getValue($var), $depth, $options));
+                            }
+                        }
+                    }
+
+                    return sprintf('%s {%s}', $object_status, implode(', ', $properties));
+                }
             case 'resource':
                 return sprintf('%s %s', get_resource_type($var), $var);
             case 'resource (closed)':

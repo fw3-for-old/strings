@@ -17,6 +17,8 @@
 
 namespace fw3_for_old\ez_test\test_unit;
 
+use fw3_for_old\ez_test\TestRunner;
+
 /**
  * 抽象テスト実施クラス
  */

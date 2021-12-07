@@ -348,25 +348,129 @@ class ConvertTest extends AbstractTest
         $actual     = Convert::toDebugString($value, 4);
         $this->assertEquals($expected, $actual);
 
+        $expected   = 'Array';
+        $actual     = Convert::toDebugString($value, 0, true);
+        $this->assertEquals($expected, $actual);
+
+        $expected   = '[
+    0   => 1,
+    1   => Array,
+    \'a\' => \'a\',
+    \'b\' => Array,
+]';
+        $actual     = Convert::toDebugString($value, 1, true);
+        $this->assertEquals($expected, $actual);
+
+        $expected   = '[
+    0   => 1,
+    1   => [
+        0   => 2,
+        1   => Array,
+    ],
+    \'a\' => \'a\',
+    \'b\' => [
+        \'b\' => \'b\',
+        \'c\' => Array,
+    ],
+]';
+        $actual     = Convert::toDebugString($value, 2, true);
+        $this->assertEquals($expected, $actual);
+
+        $expected   = '[
+    0   => 1,
+    1   => [
+        0   => 2,
+        1   => [
+            0   => 3,
+        ],
+    ],
+    \'a\' => \'a\',
+    \'b\' => [
+        \'b\' => \'b\',
+        \'c\' => [
+            \'c\' => \'c\',
+        ],
+    ],
+]';
+        $actual     = Convert::toDebugString($value, 3, true);
+        $this->assertEquals($expected, $actual);
+
+        $actual     = Convert::toDebugString($value, 4, true);
+        $this->assertEquals($expected, $actual);
+
         //----------------------------------------------
         $value  = new MockForConvertTest();
-        ob_start();
-        var_dump($value);
-        $object_status = ob_get_clean();
 
-        $object_status = substr($object_status, 0, strpos($object_status, ' ('));
-        $object_status = sprintf('object(%s)', substr($object_status, 6));
+        if (!function_exists('spl_object_id')) {
+            ob_start();
+            var_dump($value);
+            $object_status = ob_get_clean();
+            $object_status = substr($object_status, 0, strpos($object_status, ' ('));
+            $object_status = sprintf('object%s', substr($object_status, 6));
+        } else {
+            $object_status = sprintf('object(%s)#%d', get_class($value), spl_object_id($value));
+        }
 
         $expected   = $object_status;
         $actual     = Convert::toDebugString($value);
         $this->assertEquals($expected, $actual);
 
-        $expected   = sprintf('%s {static public \'public_const\' = Array, static public \'publicStatic\' = Array, static protected \'PROTECTD_CONST\' = Array, static protected \'protectdStatic\' = Array, static private \'PRIVATE_CONST\' = Array, static private \'privateStatic\' = Array, public \'public\' = Array, protected \'protectd\' = Array, private \'private\' = Array}', $object_status);
+        $expected   = sprintf('%s {public static $public_const = Array, public static $publicStatic = Array, protected static $PROTECTD_CONST = Array, protected static $protectdStatic = Array, private static $PRIVATE_CONST = Array, private static $privateStatic = Array, public $public = Array, protected $protectd = Array, private $private = Array}', $object_status);
         $actual     = Convert::toDebugString($value, 1);
         $this->assertEquals($expected, $actual);
 
-        $expected   = sprintf('%s {static public \'public_const\' = [0 => Array], static public \'publicStatic\' = [0 => Array], static protected \'PROTECTD_CONST\' = [0 => Array], static protected \'protectdStatic\' = [0 => Array], static private \'PRIVATE_CONST\' = [0 => Array], static private \'privateStatic\' = [0 => Array], public \'public\' = [0 => Array], protected \'protectd\' = [0 => Array], private \'private\' = [0 => Array]}', $object_status);
+        $expected   = sprintf('%s {public static $public_const = [0 => Array], public static $publicStatic = [0 => Array], protected static $PROTECTD_CONST = [0 => Array], protected static $protectdStatic = [0 => Array], private static $PRIVATE_CONST = [0 => Array], private static $privateStatic = [0 => Array], public $public = [0 => Array], protected $protectd = [0 => Array], private $private = [0 => Array]}', $object_status);
         $actual     = Convert::toDebugString($value, 2);
+        $this->assertEquals($expected, $actual);
+
+        $expected   = $object_status;
+        $actual     = Convert::toDebugString($value, 0, true);
+        $this->assertEquals($expected, $actual);
+
+        $expected   = sprintf('%s {
+    static  public      $public_const   = Array,
+    static  public      $publicStatic   = Array,
+    static  protected   $PROTECTD_CONST = Array,
+    static  protected   $protectdStatic = Array,
+    static  private     $PRIVATE_CONST  = Array,
+    static  private     $privateStatic  = Array,
+    public      $public     = Array,
+    protected   $protectd   = Array,
+    private     $private    = Array,
+}', $object_status);
+        $actual     = Convert::toDebugString($value, 1, true);
+        $this->assertEquals($expected, $actual);
+
+        $expected   = sprintf('%s {
+    static  public      $public_const   = [
+        0   => Array,
+    ],
+    static  public      $publicStatic   = [
+        0   => Array,
+    ],
+    static  protected   $PROTECTD_CONST = [
+        0   => Array,
+    ],
+    static  protected   $protectdStatic = [
+        0   => Array,
+    ],
+    static  private     $PRIVATE_CONST  = [
+        0   => Array,
+    ],
+    static  private     $privateStatic  = [
+        0   => Array,
+    ],
+    public      $public     = [
+        0   => Array,
+    ],
+    protected   $protectd   = [
+        0   => Array,
+    ],
+    private     $private    = [
+        0   => Array,
+    ],
+}', $object_status);
+        $actual     = Convert::toDebugString($value, 2, true);
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------

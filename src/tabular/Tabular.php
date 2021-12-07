@@ -116,6 +116,11 @@ class Tabular
         'private const'         => self::INDENTE_BASE_LENGTH_PRIVATE_CONST,
     );
 
+    /**
+     * @var string  インデントで使用する文字
+     */
+    const INDENTE_CHAR  = ' ';
+
     //==============================================
     // static properties
     //==============================================
@@ -148,6 +153,11 @@ class Tabular
      * @var array   クラスデフォルトのタブ化対象データ
      */
     protected static $defaultRows   = array();
+
+    /**
+     * @var bool    クラスデフォルトの行末スペーストリムを行うかどうか
+     */
+    protected static $defaultTrimEolSpace   = false;
 
     //==============================================
     // properties
@@ -212,6 +222,11 @@ class Tabular
      */
     protected $preBuildeCellMaxWidthMap = null;
 
+    /**
+     * @var bool    行末スペーストリムを行うかどうか
+     */
+    protected $trimEolSpace = false;
+
     //==============================================
     // factory methods
     //==============================================
@@ -235,7 +250,9 @@ class Tabular
 
         $this->characterEncoding    = isset($encoding) ? $encoding : (
             isset(static::$defaultCharacterEncoding) ? static::$defaultCharacterEncoding :mb_internal_encoding()
-            );
+        );
+
+        $this->trimEolSpace(static::$defaultTrimEolSpace);
     }
 
     /**
@@ -325,6 +342,7 @@ class Tabular
                 'tab_width'             => static::defaultTabWidth(),
                 'indent_level'          => static::defaultIndenteLevel(),
                 'character_encodingg'   => static::defaultCharacterEncoding(),
+                'trim_eol_space'        => static::defaultTrimEolSpace(),
             );
         }
 
@@ -346,6 +364,10 @@ class Tabular
 
         if (isset($default_settings['character_encodingg'])) {
             static::defaultCharacterEncoding($default_settings['character_encodingg']);
+        }
+
+        if (isset($default_settings['trim_eol_space'])) {
+            static::defaultTrimEolSpace($default_settings['trim_eol_space']);
         }
 
         return get_called_class();
@@ -456,6 +478,26 @@ class Tabular
         return get_called_class();
     }
 
+    /**
+     * クラスデフォルトの行末スペーストリムを行うかどうかを設定・取得します。
+     *
+     * @param   bool|null   $trim_eol_space クラスデフォルトの行末スペーストリムを行うかどうか
+     * @return  bool|null   このクラスパスまたはクラスデフォルトの行末スペーストリムを行うかどうか
+     */
+    public static function defaultTrimEolSpace($trim_eol_space = false)
+    {
+        if ($trim_eol_space === false && func_num_args() === 0) {
+            return static::$defaultTrimEolSpace;
+        }
+
+        if (!is_bool($trim_eol_space)) {
+            throw new \InvalidArgumentException(sprintf('利用できない値を指定されました。trim_eol_space:%s', Convert::toDebugString($trim_eol_space, 2)));
+        }
+
+        static::$defaultTrimEolSpace    = $trim_eol_space;
+        return get_called_class();
+    }
+
     //==============================================
     // property accessors
     //==============================================
@@ -474,6 +516,7 @@ class Tabular
                 'tab_width'             => $this->tabWidth(),
                 'indent_level'          => $this->indenteLevel(),
                 'character_encodingg'   => $this->characterEncoding(),
+                'trim_eol_space'        => $this->trimEolSpace(),
             );
         }
 
@@ -495,6 +538,10 @@ class Tabular
 
         if (isset($settings['character_encodingg'])) {
             $this->characterEncoding($settings['character_encodingg']);
+        }
+
+        if (isset($settings['trim_eol_space'])) {
+            $this->trimEolSpace($settings['trim_eol_space']);
         }
 
         return $this;
@@ -694,6 +741,26 @@ class Tabular
     }
 
     /**
+     * クラスデフォルトの行末スペーストリムを行うかどうかを設定・取得します。
+     *
+     * @param   bool|null   $trim_eol_space 行末スペーストリムを行うかどうか
+     * @return  static|bool|null    このクラスパスまたは行末スペーストリムを行うかどうか
+     */
+    public function trimEolSpace($trim_eol_space = false)
+    {
+        if ($trim_eol_space === false && func_num_args() === 0) {
+            return $this->trimEolSpace;
+        }
+
+        if (!is_bool($trim_eol_space)) {
+            throw new \InvalidArgumentException(sprintf('利用できない値を指定されました。trim_eol_space:%s', Convert::toDebugString($trim_eol_space, 2)));
+        }
+
+        $this->trimEolSpace = $trim_eol_space;
+        return $this;
+    }
+
+    /**
      * 列の全てがnullだった場合に列をスキップするかどうかを設定・取得します。
      *
      * @param   bool    $null_column_skip   列の全てがnullだった場合に列をスキップするかどうか
@@ -857,7 +924,7 @@ class Tabular
      * @param   string  $repart リパート文字
      * @return  string  フィル用のリパート文字列
      */
-    public function buildRepart($string, $idx, $repart = ' ')
+    public function buildRepart($string, $idx, $repart = self::INDENTE_CHAR)
     {
         if ($this->preBuildeCellMaxWidthMap === null) {
             $this->buildCellWidthMap();
@@ -896,7 +963,8 @@ class Tabular
         }
 
         foreach ($this->header as $idx => $cell) {
-            $stack[]    = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_max_width_map));
+            $header = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, static::INDENTE_CHAR, null, $base_indente, $cell_max_width_map));
+            $stack[]    = $this->trimEolSpace ? rtrim($header, static::INDENTE_CHAR) : $header;
         }
 
         foreach ($this->rows as $row) {
@@ -905,9 +973,10 @@ class Tabular
                 if ($this->nullColumnSkip && !isset($this->notNullColumnMap[$idx])) {
                     continue;
                 }
-                $message[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, ' ', null, $base_indente, $cell_max_width_map));
+                $message[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, static::INDENTE_CHAR, null, $base_indente, $cell_max_width_map));
             }
-            $stack[] = implode('', $message);
+            $message    = implode('', $message);
+            $stack[]    = $this->trimEolSpace ? rtrim($message, static::INDENTE_CHAR) : $message;
         }
 
         return $stack;
