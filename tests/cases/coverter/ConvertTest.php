@@ -438,6 +438,22 @@ class ConvertTest extends AbstractTest
     protected   $protectd   = Array,
     private     $private    = Array,
 }', $object_status);
+        $actual     = Convert::toDebugString($value, 1, array(
+            'prettify'  => true,
+        ));
+        $this->assertEquals($expected, $actual);
+
+        $expected   = sprintf('%s {
+    static  public      $public_const   = Array,
+    static  public      $publicStatic   = Array,
+    static  protected   $PROTECTD_CONST = Array,
+    static  protected   $protectdStatic = Array,
+    static  private     $PRIVATE_CONST  = Array,
+    static  private     $privateStatic  = Array,
+    public      $public     = Array,
+    protected   $protectd   = Array,
+    private     $private    = Array,
+}', $object_status);
         $actual     = Convert::toDebugString($value, 1, true);
         $this->assertEquals($expected, $actual);
 
@@ -471,6 +487,57 @@ class ConvertTest extends AbstractTest
     ],
 }', $object_status);
         $actual     = Convert::toDebugString($value, 2, true);
+        $this->assertEquals($expected, $actual);
+
+        //----------------------------------------------
+        $mock   = new MockForConvertTest();
+
+        $value  = array(
+            $mock,
+            array(
+                $mock,
+                $mock,
+                array(
+                    $mock,
+                    $mock,
+                    $mock,
+                    array(
+                        $mock,
+                        $mock,
+                        $mock,
+                        $mock,
+                    ),
+                ),
+            ),
+        );
+
+        if (!function_exists('spl_object_id')) {
+            ob_start();
+            var_dump($value);
+            $object_status = ob_get_clean();
+            $object_status = substr($object_status, 0, strpos($object_status, ' ('));
+            $object_status = sprintf('object%s', substr($object_status, 6));
+        } else {
+            $object_status = sprintf('object(%s)#%d', get_class($value), spl_object_id($value));
+        }
+
+        $expected   = '[
+    0   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
+    1   => [
+        0   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
+        1   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
+        2   => [
+            0   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
+            1   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
+            2   => objectfw3_for_old\tests\strings\converter\MockForConvertTest#76,
+            3   => Array,
+        ],
+    ],
+]';
+        $actual     = Convert::toDebugString($value, 3, array(
+            'prettify'      => true,
+            'object_detail' => false,
+        ));
         $this->assertEquals($expected, $actual);
 
         //----------------------------------------------
