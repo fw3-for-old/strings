@@ -83,9 +83,9 @@ class StringBuilderTest extends AbstractTest
 
         //----------------------------------------------
         $expected   = 'message_{:pattern_a}';
-        $actual     = StringBuilder::disposableFactory()->buildMessage('message_{:pattern_a}', [
+        $actual     = StringBuilder::disposableFactory()->buildMessage('message_{:pattern_a}', array(
             'pattern_a' => '{:pattern_a}'
-        ]);
+        ));
         $this->assertSame($expected, $actual);
     }
 

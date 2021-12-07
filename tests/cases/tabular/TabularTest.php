@@ -270,7 +270,7 @@ class TabularTest extends AbstractTest
     {
         //==============================================
         $expected   = Tabular::defaultSettings();
-        $actual     = array('header' => array(), 'rows' => array(), 'tab_width' => 4, 'indent_level' => 0, 'character_encodingg' => 'UTF-8');
+        $actual     = array('header' => array(), 'rows' => array(), 'tab_width' => 4, 'indent_level' => 0, 'character_encodingg' => 'UTF-8', 'trim_eol_space' => FALSE);
         $this->assertSame($expected, $actual);
 
         $expected   = Tabular::defaultHeader();
@@ -293,11 +293,15 @@ class TabularTest extends AbstractTest
         $actual     = Tabular::DEFAULT_CHARACTER_ENCODING;
         $this->assertSame($expected, $actual);
 
+        $expected   = Tabular::defaultTrimEolSpace();
+        $actual     = false;
+        $this->assertSame($expected, $actual);
+
         //----------------------------------------------
         $tabular    = Tabular::factory();
 
         $expected   = $tabular->settings();
-        $actual     = array('header' => array(), 'rows' => array(), 'tab_width' => 4, 'indent_level' => 0, 'character_encodingg' => 'UTF-8');
+        $actual     = array('header' => array(), 'rows' => array(), 'tab_width' => 4, 'indent_level' => 0, 'character_encodingg' => 'UTF-8', 'trim_eol_space' => FALSE);
         $this->assertSame($expected, $actual);
 
         $expected   = $tabular->header();
@@ -326,6 +330,7 @@ class TabularTest extends AbstractTest
         $tab_width      = 2;
         $indent_level   = 1;
         $encoding       = 'SJIS-win';
+        $trim_eol_space = false;
 
         $default_settings   = array(
             'header'                => $header,
@@ -333,6 +338,7 @@ class TabularTest extends AbstractTest
             'tab_width'             => $tab_width,
             'indent_level'          => $indent_level,
             'character_encodingg'   => $encoding,
+            'trim_eol_space'        => $trim_eol_space,
         );
 
         //----------------------------------------------
@@ -372,6 +378,7 @@ class TabularTest extends AbstractTest
         $tab_width      = 2;
         $indent_level   = 1;
         $encoding       = 'SJIS-win';
+        $trim_eol_space = true;
 
         $default_settings   = array(
             'header'                => $header,
@@ -379,6 +386,7 @@ class TabularTest extends AbstractTest
             'tab_width'             => $tab_width,
             'indent_level'          => $indent_level,
             'character_encodingg'   => $encoding,
+            'trim_eol_space'        => $trim_eol_space,
         );
 
         //----------------------------------------------
@@ -408,6 +416,10 @@ class TabularTest extends AbstractTest
         $actual     = $encoding;
         $this->assertSame($expected, $actual);
 
+        $expected   = Tabular::defaultTrimEolSpace();
+        $actual     = $trim_eol_space;
+        $this->assertSame($expected, $actual);
+
         //----------------------------------------------
         $tabular    = Tabular::factory();
 
@@ -433,6 +445,10 @@ class TabularTest extends AbstractTest
 
         $expected   = $tabular->characterEncoding();
         $actual     = $encoding;
+        $this->assertSame($expected, $actual);
+
+        $expected   = $tabular->trimEolSpace();
+        $actual     = $trim_eol_space;
         $this->assertSame($expected, $actual);
     }
 
@@ -636,6 +652,46 @@ class TabularTest extends AbstractTest
 
         $expected   = $tabular->characterEncoding();
         $actual     = $character_encoding;
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testTrimEolSpace()
+    {
+        //----------------------------------------------
+        $expected   = Tabular::defaultTrimEolSpace();
+        $actual     = false;
+        $this->assertSame($expected, $actual);
+
+        //----------------------------------------------
+        $tabular    = Tabular::factory();
+
+        $expected   = $tabular->trimEolSpace();
+        $actual     = false;
+        $this->assertSame($expected, $actual);
+
+        //==============================================
+        $trim_eol_space = true;
+
+        Tabular::defaultTrimEolSpace($trim_eol_space);
+
+        $expected   = Tabular::defaultTrimEolSpace();
+        $actual     = $trim_eol_space;
+        $this->assertSame($expected, $actual);
+
+        //----------------------------------------------
+        $tabular->trimEolSpace($trim_eol_space);
+
+        $expected   = $tabular->trimEolSpace();
+        $actual     = $trim_eol_space;
+        $this->assertSame($expected, $actual);
+
+        //==============================================
+        Tabular::factory(Tabular::DEFAULT_NAME);
+
+        $tabular    = Tabular::factory();
+
+        $expected   = $tabular->trimEolSpace();
+        $actual     = $trim_eol_space;
         $this->assertSame($expected, $actual);
     }
 
