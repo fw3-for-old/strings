@@ -469,12 +469,13 @@ class Convert
      *      'prettify'      => bool 出力結果をprettifyするかどうか
      *      'indent_level'  => int  prettify時の開始インデントレベル
      *      'indent_width'  => int  prettify時のインデント幅
+     *      'object_detail' => bool オブジェクト詳細情報に対してのみの表示制御
      *  ]
      * @return  string  変数に関する情報
      */
     public static function toDebugString($var, $depth = 0, $options = array())
     {
-        $type = gettype($var);
+        $object_detail  = isset($options['object_detail']) ? $options['object_detail'] : true;
 
         if (is_array($options)) {
             if (!isset($options['prettify'])) {
@@ -502,7 +503,7 @@ class Convert
             );
         }
 
-        switch ($type) {
+        switch (gettype($var)) {
             case 'boolean':
                 return $var ? 'true' : 'false';
             case 'integer':
@@ -518,6 +519,7 @@ class Convert
                 if ($depth < 1) {
                     return 'Array';
                 }
+
                 --$depth;
 
                 if ($options['prettify']) {
@@ -556,7 +558,7 @@ class Convert
                     $object_status = sprintf('object(%s)#%d', get_class($var), spl_object_id($var));
                 }
 
-                if ($depth < 1) {
+                if ($depth < 1 || !$object_detail) {
                     return $object_status;
                 }
 
