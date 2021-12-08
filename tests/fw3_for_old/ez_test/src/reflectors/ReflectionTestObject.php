@@ -17,27 +17,35 @@
 
 namespace fw3_for_old\ez_test\reflectors;
 
+use fw3_for_old\ez_test\reflectors\annotations\ExclusionGroup;
+use fw3_for_old\ez_test\reflectors\annotations\Group;
+use fw3_for_old\ez_test\reflectors\annotations\InstanceFork;
+use fw3_for_old\ez_test\reflectors\annotations\ProcessFork;
+use fw3_for_old\ez_test\reflectors\annotations\StopWithAssertionFailed;
+
 /**
  * test case reflector
  */
 class ReflectionTestObject extends \ReflectionClass implements \IteratorAggregate
 {
-    const ANNOTATION_PROCESS_FORK               = '@processFork';
-    const ANNOTATION_INSTANCE_FORK              = '@instanceFork';
-    const ANNOTATION_STOP_WITH_ASSERTION_FAILED = '@stopWithAssertionFailed';
-    const ANNOTATION_GROUP                      = '@group';
-    const ANNOTATION_EXCLUSION_GROUP            = '@exclusionGroup';
-
-    protected static $ANNOTATION_MAP    = array(
-        self::ANNOTATION_PROCESS_FORK               => self::ANNOTATION_PROCESS_FORK,
-        self::ANNOTATION_INSTANCE_FORK              => self::ANNOTATION_INSTANCE_FORK,
-        self::ANNOTATION_STOP_WITH_ASSERTION_FAILED => self::ANNOTATION_STOP_WITH_ASSERTION_FAILED,
-        self::ANNOTATION_GROUP                      => self::ANNOTATION_GROUP,
-        self::ANNOTATION_EXCLUSION_GROUP            => self::ANNOTATION_EXCLUSION_GROUP,
+    /**
+     * @var array   アノテーションクラスマップ
+     */
+    protected static $ANNOTATION_CLASS_MAP  = array(
+        ProcessFork::ANNOTATION                 => "\\fw3_for_old\\ez_test\\reflectors\\annotations\\ProcessFork",
+        InstanceFork::ANNOTATION                => "\\fw3_for_old\\ez_test\\reflectors\\annotations\\InstanceFork",
+        StopWithAssertionFailed::ANNOTATION     => "\\fw3_for_old\\ez_test\\reflectors\\annotations\\StopWithAssertionFailed",
+        Group::ANNOTATION                       => "\\fw3_for_old\\ez_test\\reflectors\\annotations\\Group",
+        ExclusionGroup::ANNOTATION              => "\\fw3_for_old\\ez_test\\reflectors\\annotations\\ExclusionGroup",
     );
 
+    /**
+     * @var array   有効なアノテーションリスト
+     */
     protected $annotationList;
-
+    /**
+     * @var array   テストメソッドリスト
+     */
     protected $testMethodList = array();
 
     /**
@@ -59,7 +67,7 @@ class ReflectionTestObject extends \ReflectionClass implements \IteratorAggregat
 
         foreach ($instance->getMethods() as $method) {
             $method = ReflectionTestMethod::factory($instance, $method->name, $parameters);
-            if (!$method->isTestMethod() || (!$instance->canTestByGroup() && !$method->canTestByGroup())) {
+            if (!$method->isTestMethod() || !$instance->canTestByGroup() || !$method->canTestByGroup()) {
                 continue;
             }
 
@@ -81,34 +89,59 @@ class ReflectionTestObject extends \ReflectionClass implements \IteratorAggregat
         $annotation_list    = array();
         $stack              = array();
 
+        $before_annotation  = null;
+
         foreach ($matcheds[1] as $annotation) {
             if ($annotation === '/**') {
                 continue;
-            } elseif ($annotation === '*') {
+            }
+
+            if ($annotation === '*') {
                 continue;
-            } elseif ($annotation === '/') {
+            }
+
+            if ($annotation === '/') {
                 continue;
             }
 
             if (\mb_substr($annotation, 0, 1) === '@') {
-                $annotation         = explode(' ', $annotation, 2);
-                $annotation_name    = $annotation[0];
+                if ($before_annotation !== null) {
+                    $work_annotation    = \explode(' ', $before_annotation, 2);
+                    $annotation_name    = $work_annotation[0];
 
-                if (!isset(static::$ANNOTATION_MAP[$annotation_name])) {
-                    continue;
+                    $before_annotation  = null;
+
+                    if (isset(static::$ANNOTATION_CLASS_MAP[$annotation_name])) {
+                        $annotation_class_path              = static::$ANNOTATION_CLASS_MAP[$annotation_name];
+                        $annotation_list[$annotation_name]  = $annotation_class_path::factory(
+                            isset($work_annotation[1]) ? $work_annotation[1] : '',
+                            $stack,
+                            $this->parameters
+                        );
+
+                        $stack              = array();
+                    } else {
+                        continue;
+                    }
                 }
 
-                $options    = isset($annotation[1]) ? str_getcsv($annotation[1], ' ', '\'', "\\") : array();
-
-                $annotation_list[$annotation_name]  = array(
-                    'name'      => \mb_substr($annotation_name, 1),
-                    'options'   => $options,
-                    'input'     => $stack,
-               );
-
-                $stack  = array();
+                $before_annotation  = $annotation;
             } else {
                 $stack[]    = $annotation;
+            }
+        }
+
+        if ($before_annotation !== null) {
+            $work_annotation    = \explode(' ', $before_annotation, 2);
+            $annotation_name    = $work_annotation[0];
+
+            if (isset(static::$ANNOTATION_CLASS_MAP[$annotation_name])) {
+                $annotation_class_path              = static::$ANNOTATION_CLASS_MAP[$annotation_name];
+                $annotation_list[$annotation_name]  = $annotation_class_path::factory(
+                    isset($work_annotation[1]) ? $work_annotation[1] : '',
+                    $stack,
+                    $this->parameters
+                );
             }
         }
 
@@ -122,67 +155,42 @@ class ReflectionTestObject extends \ReflectionClass implements \IteratorAggregat
 
     public function useProcessFork()
     {
-        return $this->useableByKey(self::ANNOTATION_PROCESS_FORK);
+        return isset($this->annotationList[ProcessFork::ANNOTATION]) ? $this->annotationList[ProcessFork::ANNOTATION]->useable() : false;
     }
 
     public function useInstanceFork()
     {
-        return $this->useableByKey(self::ANNOTATION_INSTANCE_FORK);
+        return isset($this->annotationList[InstanceFork::ANNOTATION]) ? $this->annotationList[InstanceFork::ANNOTATION]->useable() : false;
     }
 
-    public function annotationStopWithAssertionFailed()
+    public function useStopWithAssertionFailed()
     {
-        return $this->useableByKey(self::ANNOTATION_STOP_WITH_ASSERTION_FAILED);
+        return isset($this->annotationList[StopWithAssertionFailed::ANNOTATION]) ? $this->annotationList[StopWithAssertionFailed::ANNOTATION]->useable() : false;
     }
 
     public function useGroup()
     {
-        return $this->useableByKey(self::ANNOTATION_GROUP);
+        return isset($this->annotationList[Group::ANNOTATION]) ? $this->annotationList[Group::ANNOTATION]->useable() : false;
     }
 
     public function useExclusionGroup()
     {
-        return $this->useableByKey(self::ANNOTATION_EXCLUSION_GROUP);
+        return isset($this->annotationList[ExclusionGroup::ANNOTATION]) ? $this->annotationList[ExclusionGroup::ANNOTATION]->useable() : false;
     }
 
     public function canTestByGroup()
     {
-        if (isset($this->parameters['group'])) {
-            if ($this->useExclusionGroup()) {
-                return $this->parameters['group'] !== $this->annotationList[self::ANNOTATION_EXCLUSION_GROUP]['options'][0];
-            }
+        if (!$this->useGroup() && !$this->useExclusionGroup()) {
+            return true;
+        }
 
-            if ($this->useGroup()) {
-                return $this->parameters['group'] === $this->annotationList[self::ANNOTATION_GROUP]['options'][0];
-            }
-
+        if (isset($this->annotationList[ExclusionGroup::ANNOTATION])
+         && $this->annotationList[ExclusionGroup::ANNOTATION]->useable()
+         && !$this->annotationList[ExclusionGroup::ANNOTATION]->executable()) {
             return false;
         }
 
-        return true;
-    }
-
-    protected function useableByKey($key)
-    {
-        if (!isset($this->annotationList[$key])) {
-            return false;
-        }
-
-        if (isset($this->annotationList[$key]['options'][0])) {
-            if (is_bool($this->annotationList[$key]['options'][0])) {
-                return $this->annotationList[$key]['options'][0] === true;
-            }
-
-            if (is_string($this->annotationList[$key]['options'][0])) {
-                switch ($key) {
-                    case static::ANNOTATION_GROUP:
-                    case static::ANNOTATION_EXCLUSION_GROUP:
-                        return true;
-                }
-            }
-        }
-
-        return true;
+        return $this->annotationList[Group::ANNOTATION]->executable();
     }
 
     public function hasTestMethods()

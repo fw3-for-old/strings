@@ -19,7 +19,23 @@
  * ez_test関連ファイル一括読み込み
  */
 require_once sprintf('%s/TestRunner.php', __DIR__);
+
+require_once sprintf('%s/reflectors/annotations/abstracts/AbstractAnnotation.php', __DIR__);
+require_once sprintf('%s/reflectors/annotations/abstracts/AbstractBoolAnnotation.php', __DIR__);
+
+require_once sprintf('%s/reflectors/annotations/DataProvider.php', __DIR__);
+require_once sprintf('%s/reflectors/annotations/ExclusionGroup.php', __DIR__);
+require_once sprintf('%s/reflectors/annotations/ExpectedException.php', __DIR__);
+require_once sprintf('%s/reflectors/annotations/ExpectedExceptionMessage.php', __DIR__);
+require_once sprintf('%s/reflectors/annotations/Group.php', __DIR__);
+require_once sprintf('%s/reflectors/annotations/InstanceFork.php', __DIR__);
+require_once sprintf('%s/reflectors/annotations/ProcessFork.php', __DIR__);
+require_once sprintf('%s/reflectors/annotations/StopWithAssertionFailed.php', __DIR__);
+require_once sprintf('%s/reflectors/annotations/Test.php', __DIR__);
+
 require_once sprintf('%s/reflectors/ReflectionTestObject.php', __DIR__);
 require_once sprintf('%s/reflectors/ReflectionTestMethod.php', __DIR__);
+
 require_once sprintf('%s/test_unit/TestInterface.php', __DIR__);
+
 require_once sprintf('%s/test_unit/AbstractTest.php', __DIR__);
