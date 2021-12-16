@@ -670,6 +670,36 @@ class Tabular
     }
 
     /**
+     * 空の状態かどうかを返します。
+     *
+     * @return  bool    空の状態かどうか
+     */
+    public function isEmpty()
+    {
+        return $this->isHeaderEmpty() && $this->isRowEmpty();
+    }
+
+    /**
+     * ヘッダが空かどうかを返します。
+     *
+     * @return  bool    ヘッダが空かどうか
+     */
+    public function isHeaderEmpty()
+    {
+        return empty($this->header);
+    }
+
+    /**
+     * 行が空かどうかを返します。
+     *
+     * @return  bool    行が空かどうか
+     */
+    public function isRowEmpty()
+    {
+        return empty($this->rows);
+    }
+
+    /**
      * タブ幅を設定・取得します。
      *
      * @param   int|string|null $tab_width  タブ幅
@@ -941,30 +971,20 @@ class Tabular
      */
     public function build()
     {
-        if ($this->preBuildeCellMaxWidthMap === null) {
-            $this->buildCellWidthMap();
-        }
-        $cell_max_width_map  = $this->preBuildeCellMaxWidthMap;
-
         $stack  = array();
 
         $base_indente   = 0;
         if (is_int($this->baseIndente)) {
-            $base_indente   = $this->baseIndente;
+            $base_indente   = str_repeat(static::INDENTE_CHAR, ($this->indenteLevel * $this->tabWidth) + $this->baseIndente);
         } elseif (is_string($this->baseIndente) && isset(static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente])) {
-            $base_indente   = static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente];
-        }
-
-        $base_indente   = 0;
-        if (is_int($this->baseIndente)) {
-            $base_indente   = $this->baseIndente;
-        } elseif (is_string($this->baseIndente) && isset(static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente])) {
-            $base_indente   = static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente];
+            $base_indente   = str_repeat(static::INDENTE_CHAR, static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente]);
+        } else {
+            $base_indente   = str_repeat(static::INDENTE_CHAR, $this->indenteLevel * $this->tabWidth);
         }
 
         foreach ($this->header as $idx => $cell) {
-            $header = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, static::INDENTE_CHAR, null, $base_indente, $cell_max_width_map));
-            $stack[]    = $this->trimEolSpace ? rtrim($header, static::INDENTE_CHAR) : $header;
+            $header = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx));
+            $stack[]    = sprintf('%s%s', $base_indente, $this->trimEolSpace ? rtrim($header, static::INDENTE_CHAR) : $header);
         }
 
         foreach ($this->rows as $row) {
@@ -973,10 +993,10 @@ class Tabular
                 if ($this->nullColumnSkip && !isset($this->notNullColumnMap[$idx])) {
                     continue;
                 }
-                $message[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx, static::INDENTE_CHAR, null, $base_indente, $cell_max_width_map));
+                $message[]  = sprintf('%s%s', $cell, $this->buildRepart($cell, $idx));
             }
             $message    = implode('', $message);
-            $stack[]    = $this->trimEolSpace ? rtrim($message, static::INDENTE_CHAR) : $message;
+            $stack[]    = sprintf('%s%s', $base_indente, $this->trimEolSpace ? rtrim($message, static::INDENTE_CHAR) : $message);
         }
 
         return $stack;
