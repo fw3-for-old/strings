@@ -971,6 +971,10 @@ class Tabular
      */
     public function build()
     {
+        if ($this->preBuildeMaxWidthMap === null) {
+            $this->buildMaxWidthMap();
+        }
+
         $stack  = array();
 
         $base_indente   = 0;
