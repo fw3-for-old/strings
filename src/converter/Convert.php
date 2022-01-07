@@ -525,7 +525,7 @@ class Convert
                 if ($options['prettify']) {
                     $next_options   = $options;
 
-                    $tabular        = Tabular::disposableFactory($next_options['indent_width'], $next_options['indent_level'])->trimEolSpace(true);
+                    $tabular        = Tabular::disposableFactory($next_options['indent_width'])->trimEolSpace(true);
 
                     $indent  = str_repeat(' ', $next_options['indent_width'] * $next_options['indent_level']);
 
@@ -576,8 +576,8 @@ class Convert
                 if ($options['prettify']) {
                     $next_options   = $options;
 
-                    $staticTabular  = Tabular::disposableFactory($next_options['indent_width'], $next_options['indent_level'])->trimEolSpace(true);
-                    $dynamicTabular = Tabular::disposableFactory($next_options['indent_width'], $next_options['indent_level'])->trimEolSpace(true);
+                    $staticTabular  = Tabular::disposableFactory($next_options['indent_width'])->trimEolSpace(true);
+                    $dynamicTabular = Tabular::disposableFactory($next_options['indent_width'])->trimEolSpace(true);
 
                     $indent  = str_repeat(' ', $next_options['indent_width'] * $next_options['indent_level']);
 
