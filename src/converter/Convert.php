@@ -466,16 +466,19 @@ class Convert
      * @param   int             $depth      変数に関する情報を文字列にする階層の深さ
      * @param   array|bool|null $options    オプション
      *  [
-     *      'prettify'      => bool 出力結果をprettifyするかどうか
-     *      'indent_level'  => int  prettify時の開始インデントレベル
-     *      'indent_width'  => int  prettify時のインデント幅
-     *      'object_detail' => bool オブジェクト詳細情報に対してのみの表示制御
+     *      'prettify'      => bool     出力結果をprettifyするかどうか
+     *      'indent_level'  => int      prettify時の開始インデントレベル
+     *      'indent_width'  => int      prettify時のインデント幅
+     *      'object_detail' => bool     オブジェクト詳細情報に対してのみの表示制御
+     *      'loaded_object' => array    現時点までに読み込んだことがあるobject
      *  ]
      * @return  string  変数に関する情報
      */
     public static function toDebugString($var, $depth = 0, $options = array())
     {
         $object_detail  = isset($options['object_detail']) ? $options['object_detail'] : true;
+
+        $loaded_object  = isset($options['loaded_object']) ? $options['loaded_object'] : [];
 
         if (is_array($options)) {
             if (!isset($options['prettify'])) {
@@ -558,6 +561,11 @@ class Convert
                     $object_status = sprintf('object(%s)#%d', get_class($var), spl_object_id($var));
                 }
 
+                if (isset($loaded_object[$object_status])) {
+                    return sprintf('%s [displayed]', $object_status);
+                }
+                $loaded_object[$object_status]  = $object_status;
+
                 if ($depth < 1 || !$object_detail) {
                     return $object_status;
                 }
@@ -575,6 +583,8 @@ class Convert
 
                 if ($options['prettify']) {
                     $next_options   = $options;
+
+                    $next_options['loaded_object']  = $loaded_object;
 
                     $staticTabular  = Tabular::disposableFactory($next_options['indent_width'])->trimEolSpace(true);
                     $dynamicTabular = Tabular::disposableFactory($next_options['indent_width'])->trimEolSpace(true);
