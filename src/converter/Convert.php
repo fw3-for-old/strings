@@ -588,8 +588,6 @@ class Convert
                 if ($options['prettify']) {
                     $next_options   = $options;
 
-                    $next_options['loaded_object']  = $loaded_object;
-
                     $staticTabular  = Tabular::disposableFactory($next_options['indent_width'])->trimEolSpace(true);
                     $dynamicTabular = Tabular::disposableFactory($next_options['indent_width'])->trimEolSpace(true);
 
