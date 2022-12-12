@@ -31,3 +31,14 @@ require_once sprintf('%s/builder/modifiers/datetime/DefaultModifier.php', __DIR_
 require_once sprintf('%s/builder/modifiers/datetime/DateModifier.php', __DIR__);
 require_once sprintf('%s/tabular/Tabular.php', __DIR__);
 require_once sprintf('%s/builder/StringBuilder.php', __DIR__);
+require_once sprintf('%s/builder/DebugHtmlBuilder.php', __DIR__);
+require_once sprintf('%s/html/traits/Htmlable.php', __DIR__);
+require_once sprintf('%s/html/config/HtmlConfigInterface.php', __DIR__);
+require_once sprintf('%s/html/elements/traits/HtmlElementInterface.php', __DIR__);
+require_once sprintf('%s/html/config/HtmlConfig.php', __DIR__);
+require_once sprintf('%s/html/traits/AbstractHtmlable.php', __DIR__);
+require_once sprintf('%s/html/elements/traits/AbstractHtmlElement.php', __DIR__);
+require_once sprintf('%s/html/HtmlAttribute.php', __DIR__);
+require_once sprintf('%s/html/HtmlElement.php', __DIR__);
+require_once sprintf('%s/html/HtmlTextNode.php', __DIR__);
+require_once sprintf('%s/html/Html.php', __DIR__);

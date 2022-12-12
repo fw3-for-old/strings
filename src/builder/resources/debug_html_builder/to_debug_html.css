@@ -1,0 +1,254 @@
+
+.debug-html {
+    font-family: monospace;
+    font-size: 12px;
+    margin: 0.5rem;
+}
+
+.debug-html * {
+    font-size: 12px;
+    margin-top: 0.1rem;
+    margin-bottom: 0.1rem;
+    padding-top: 0.1rem;
+    padding-bottom: 0.1rem;
+}
+
+.debug-html .label {
+    border-radius: 0.1rem;
+    padding: 0.1rem;
+}
+
+.debug-html .true {
+    color: #fff;
+    background-color: #390;
+    text-shadow: inherit;
+}
+
+.debug-html .false {
+    color: #fff;
+    background-color: #f00;
+    text-shadow: inherit;
+}
+
+.debug-html .null {
+    background-color: #eee;
+    color: #999;
+    text-shadow: inherit;
+}
+
+.debug-html .resource {
+    text-indent: 1em;
+    margin-left: 1em;
+    
+    background-color: #fff;
+    color: #003C88;
+    text-shadow: inherit;
+}
+
+.debug-html .resource:hover {
+    font-family: monospace;
+
+    text-indent: 1em;
+    margin-left: 1em;
+
+    border-radius: 0.1rem;
+    padding: 0.1em;
+
+    background-color: #003C88;
+    color: #fff;
+    text-shadow: inherit;
+    
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.debug-html .int, .debug-html .float {
+    color: #09c;
+    text-shadow: inherit;
+}
+
+.debug-html .string {
+    background: #e8f0e1;
+    color: #693;
+    padding: 3px 1px;
+    text-shadow: inherit;
+}
+
+.debug-html .array-chip, .debug-html .object-chip {
+    font-family: monospace;
+
+    border-radius: 0.1rem;
+    padding: 0.1rem;
+
+    background-color: #a0522d;
+    color: #fff;
+    text-shadow: inherit;
+}
+
+.debug-html .array-details, .debug-html .object-details {
+    font-family: monospace;
+
+    text-indent: 1em;
+    padding-left: 1em;
+
+    color: #a0522d;
+    text-shadow: inherit;
+}
+
+.debug-html .array-details:hover, .debug-html .object-details:hover {
+    font-family: monospace;
+
+    text-indent: 1em;
+    margin-left: 1em;
+
+    border-radius: 0.1rem;
+    padding: 0.1em;
+
+    background-color: #a0522d;
+    color: #fff;
+    text-shadow: inherit;
+    
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.debug-html a.object {
+    font-family: monospace;
+    margin: 0.5rem;
+    padding: 0.1em;
+
+    background-color: #fcc;
+    color: #333;
+
+    text-decoration:none;
+    text-shadow: inherit;
+}
+
+.debug-html a.object:hover {
+    font-family: monospace;
+
+    text-indent: 1em;
+    margin-left: 1em;
+
+    border-radius: 0.1rem;
+    padding: 0.1em;
+
+    background-color: #333;
+    color: #fcc;
+    text-shadow: inherit;
+    
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.debug-html table {
+    font-family: monospace;
+
+    border-collapse:collapse;
+}
+
+.debug-html tr.row-odd {
+    background: #fff;
+}
+
+.debug-html tr.row-even {
+    background-color: #f4f4f4;
+}
+
+.debug-html table td {
+    font-family: monospace;
+
+    vertical-align: top;
+    text-align: left;
+
+    margin-top: 0.1rem;
+    margin-bottom: 0.1rem;
+    margin-left: 0;
+
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+    padding-left: 0.2;
+
+    white-space: nowrap;
+}
+
+.debug-html table td.property-name {
+    padding-left: 0.3rem;
+    padding-left: 1rem;
+}
+
+.debug-html table td.arrow {
+    padding-left: 0.3rem;
+    padding-left: 1rem;
+}
+
+.debug-html table td.center {
+    text-align: center;
+}
+
+.debug-html table td.width-full {
+    padding-left: 0.3rem;
+    width: 100%;
+}
+
+.debug-html details {
+    padding: 0;
+    margin: 0;
+}
+
+.debug-html summary {
+    padding: 0;
+    margin: 0;
+    margin-left: 1rem;
+}
+
+.debug-html .details-div {
+    text-indent: 2em;
+    padding-left: 2em;
+}
+
+.debug-html .call {
+    border-radius: 0.1rem;
+    padding: 0.1rem;
+    margin-bottom: 0.1rem;
+
+    background-color: #696969;
+    color: #fff;
+    width: 100%;
+}
+
+.debug-html .scope_static {
+    background-color: #003fa6;
+    color: #fff;
+    margin-right: -0.1rem;
+}
+
+.debug-html .access_modifier {
+    background-color: #003fa6;
+    color: #fff;
+    margin-right: 0.2rem;
+}
+
+.debug-html .public {
+    background-color: #09b;
+    color: #fff;
+}
+
+.debug-html .protected {
+    background-color: #fd7d33;
+    color: #fff;
+}
+
+.debug-html .private {
+    background-color: #d61d63;
+    color: #fff;
+}
+
+.debug-html .unknown {
+    background-color: #eee;
+    color: #fff;
+}
+
+.debug-html .property_name {
+    color: #003fa6;
+}
