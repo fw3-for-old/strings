@@ -20,11 +20,11 @@ namespace fw3_for_old\strings\builder;
 
 use fw3_for_old\strings\builder\modifiers\ModifierInterface;
 use fw3_for_old\strings\builder\modifiers\security\EscapeModifier;
-use fw3_for_old\strings\builder\traits\converter\ConverterInterface;
 use fw3_for_old\strings\converter\Convert;
 use Closure;
 use InvalidArgumentException;
 use OutOfBoundsException;
+use fw3_for_old\strings\builder\traits\converter\ConverterInterface;
 
 /**
  * 変数展開と変数に対する修飾が可能な文字列ビルダーです。
@@ -1592,7 +1592,7 @@ class StringBuilder
         }
 
         $converter              = isset($converter) ? $converter : $this->converter;
-        $enable_converter       = $converter instanceof Closure || \is_subclass_of($converter, "\\fw3_for_old\\strings\\builder\\traits\\converter\\ConverterInterface");
+        $enable_converter       = $converter instanceof \Closure || $converter instanceof ConverterInterface;
         $is_invokable_converter = $enable_converter && is_object($converter);
 
         $modifier_separator_length  = \mb_strlen($this->modifierSeparator, $this->characterEncoding);

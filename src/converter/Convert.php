@@ -18,9 +18,10 @@
 
 namespace fw3_for_old\strings\converter;
 
+use fw3_for_old\strings\builder\DebugHtmlBuilder;
+use fw3_for_old\strings\tabular\Tabular;
 use InvalidArgumentException;
 use ReflectionObject;
-use fw3_for_old\strings\tabular\Tabular;
 
 /**
  * 変数の文字列変換メソッド群です。
@@ -48,6 +49,11 @@ class Convert
     const ESCAPE_TYPE_JS            = 'javascript';
 
     /**
+     * @const   string  エスケープタイプ：CSS
+     */
+    const ESCAPE_TYPE_CSS           = 'css';
+
+    /**
      * @const   string  エスケープタイプ：シェル引数
      */
     const ESCAPE_TYPE_SHELL         = 'shell';
@@ -69,6 +75,7 @@ class Convert
     public static $ESCAPE_TYPE_MAP  = array(
         self::ESCAPE_TYPE_HTML          => self::ESCAPE_TYPE_HTML,
         self::ESCAPE_TYPE_JAVASCRIPT    => self::ESCAPE_TYPE_JAVASCRIPT,
+        self::ESCAPE_TYPE_CSS           => self::ESCAPE_TYPE_CSS,
         self::ESCAPE_TYPE_SHELL         => self::ESCAPE_TYPE_SHELL,
     );
 
@@ -298,6 +305,8 @@ class Convert
             return static::jsEscape($value, $options, $encoding);
         } elseif ($type === static::ESCAPE_TYPE_JS) {
             return static::jsEscape($value, $options, $encoding);
+        } elseif ($type === static::ESCAPE_TYPE_CSS) {
+            return static::cssEscape($value, $options, $encoding);
         } elseif ($type === static::ESCAPE_TYPE_SHELL) {
             return static::shellEscape($value, $options, $encoding);
         }
@@ -417,6 +426,43 @@ class Convert
             }
         }
         return $encoded;
+    }
+
+    /**
+     * CSS文字列のエスケープを行います。
+     *
+     * @param   string      $value      エスケープするCSS文字列
+     * @param   array       $options    オプション
+     * @return  string      エスケープされたCSS文字列
+     * @see https://blog.ohgaki.net/css%E3%81%AE%E3%82%A8%E3%82%B9%E3%82%B1%E3%83%BC%E3%83%97%E6%96%B9%E6%B3%95
+     */
+    public static function cssEscape($value, array $options = array())
+    {
+        if (\is_numeric($value)) {
+            return $value;
+        }
+
+        return \preg_replace_callback('/[^0-9a-z]/iSu', array(get_called_class(), 'cssEscapeConverter'), $value);
+    }
+
+    /**
+     * CSSエスケープ用正規表現処理結果コールバック処理
+     *
+     * @param   array   $matchers   マッチ済みの値
+     * @return  string  変換後の文字
+     */
+    protected static function cssEscapeConverter($matchers)
+    {
+        if ($matchers[0] === "\0") {
+            return '\\00FFFD';
+        }
+
+        $unpacked_char  = \unpack('Nc', \mb_convert_encoding($matchers[0], 'UTF-32BE'));
+
+        return \sprintf (
+            '\\%06X',
+            $unpacked_char['c']
+        );
     }
 
     //----------------------------------------------
@@ -595,7 +641,6 @@ class Convert
 
                     ++$next_options['indent_level'];
 
-                    $properties = array();
                     foreach (array('static', 'dynamic') as $state) {
                         $is_static  = $state === 'static';
 
@@ -657,5 +702,47 @@ class Convert
             default:
                 return 'unknown type';
         }
+    }
+
+    /**
+     * 変数に関する情報をHTML出力用のビルダーとして返します。
+     *
+     * @param   mixed               $var        変数に関する情報を文字列にしたい変数
+     * @return  DebugHtmlBuilder    HTML出力用のビルダー
+     */
+    public static function toDebugHtml($var)
+    {
+        if (\func_num_args() === 1) {
+            $instance   = DebugHtmlBuilder::factory($var)->setStartBacktraceDepth(2);
+        } else {
+            $instance   = \call_user_func_array(array("fw3_for_old\\strings\\builder\\DebugHtmlBuilder", 'factory'), \func_get_args());
+
+            if (\version_compare(\PHP_VERSION, '5.4.0', '>=')) {
+                $instance->setStartBacktraceDepth(3);
+            } else {
+                $instance->setStartBacktraceDepth(4);
+            }
+        }
+
+        return $instance;
+    }
+
+    /**
+     * バイトサイズを単位付きのバイトサイズに変換します。
+     *
+     * @param   string|int  $size       バイトサイズ
+     * @param   int         $precision  小数点以下の桁数
+     * @param   array       $suffixes   サフィックスマップ
+     * @return  string      単位付きのバイトサイズ
+     */
+    public static function toUnitByteSize($size, $precision = 2, $suffixes = array())
+    {
+        $base           = \log($size) / \log(1024);
+        $suffixes       = \array_merge(array('B', 'KB', 'MB', 'GB', 'TB'), $suffixes);
+        $floored_base   = \floor($base);
+
+        return isset($suffixes[$floored_base])
+         ? \sprintf('%s%s', \round(\pow(1024, $base - \floor($base)), $precision), $suffixes[$floored_base])
+         : \sprintf('%sB', \number_format($size));
     }
 }

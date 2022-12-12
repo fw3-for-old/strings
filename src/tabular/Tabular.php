@@ -142,7 +142,7 @@ class Tabular
     /**
      * @var int     クラスデフォルトのインデントレベル
      */
-    protected static $defaultIndenteLevel   = self::DEFAULT_INDENTE_LEVEL;
+    protected static $defaultIndentLevel    = self::DEFAULT_INDENTE_LEVEL;
 
     /**
      * @var array   クラスデフォルトのヘッダ
@@ -243,7 +243,7 @@ class Tabular
         $this->cacheName    = $cache_name;
 
         $this->tabWidth(isset($tab_width) ? $tab_width : static::$defaultTabWidth);
-        $this->indenteLevel(isset($indent_level) ? $indent_level : static::$defaultIndenteLevel);
+        $this->indentLevel(isset($indent_level) ? $indent_level : static::$defaultIndentLevel);
 
         $this->header(static::$defaultHeader);
         $this->rows(static::$defaultRows);
@@ -340,7 +340,7 @@ class Tabular
                 'header'                => static::defaultHeader(),
                 'rows'                  => static::defaultRows(),
                 'tab_width'             => static::defaultTabWidth(),
-                'indent_level'          => static::defaultIndenteLevel(),
+                'indent_level'          => static::defaultindentLevel(),
                 'character_encodingg'   => static::defaultCharacterEncoding(),
                 'trim_eol_space'        => static::defaultTrimEolSpace(),
             );
@@ -359,7 +359,7 @@ class Tabular
         }
 
         if (isset($default_settings['indent_level'])) {
-            static::defaultIndenteLevel($default_settings['indent_level']);
+            static::defaultindentLevel($default_settings['indent_level']);
         }
 
         if (isset($default_settings['character_encodingg'])) {
@@ -439,17 +439,17 @@ class Tabular
      * @param   int|string|null $tab_width  クラスデフォルトのインデントレベル
      * @return  string|int  このクラスパスまたはクラスデフォルトのインデントレベル
      */
-    public static function defaultIndenteLevel($indent_level = null)
+    public static function defaultindentLevel($indent_level = null)
     {
         if ($indent_level === null) {
-            return static::$defaultIndenteLevel;
+            return static::$defaultIndentLevel;
         }
 
         if (!is_int($indent_level) && !(is_string($indent_level) && filter_var($indent_level, \FILTER_VALIDATE_INT))) {
             throw new \Exception(sprintf('利用できない値を指定されました。indent_level:%s', Convert::toDebugString($indent_level, 2)));
         }
 
-        static::$defaultIndenteLevel = $indent_level;
+        static::$defaultIndentLevel = $indent_level;
         return get_called_class();
     }
 
@@ -514,7 +514,7 @@ class Tabular
                 'header'                => $this->header(),
                 'rows'                  => $this->rows(),
                 'tab_width'             => $this->tabWidth(),
-                'indent_level'          => $this->indenteLevel(),
+                'indent_level'          => $this->indentLevel(),
                 'character_encodingg'   => $this->characterEncoding(),
                 'trim_eol_space'        => $this->trimEolSpace(),
             );
@@ -533,7 +533,7 @@ class Tabular
         }
 
         if (isset($settings['indent_level'])) {
-            $this->indenteLevel($settings['indent_level']);
+            $this->indentLevel($settings['indent_level']);
         }
 
         if (isset($settings['character_encodingg'])) {
@@ -727,10 +727,10 @@ class Tabular
      * @param   int|string|null $tab_width  インデントレベル
      * @return  static|int|string   このインスタンスまたはインデントレベル
      */
-    public function indenteLevel($indent_level = null)
+    public function indentLevel($indent_level = null)
     {
         if ($indent_level === null) {
-            return $this->indenteLevel;
+            return $this->indentLevel;
         }
 
         if (!is_int($indent_level) && !(is_string($indent_level) && filter_var($indent_level, \FILTER_VALIDATE_INT))) {
@@ -739,7 +739,7 @@ class Tabular
 
         $this->initPreBuilding();
 
-        $this->indenteLevel = $indent_level;
+        $this->indentLevel = $indent_level;
         return $this;
     }
 
@@ -979,11 +979,11 @@ class Tabular
 
         $base_indente   = 0;
         if (is_int($this->baseIndente)) {
-            $base_indente   = str_repeat(static::INDENTE_CHAR, ($this->indenteLevel * $this->tabWidth) + $this->baseIndente);
+            $base_indente   = str_repeat(static::INDENTE_CHAR, ($this->indentLevel * $this->tabWidth) + $this->baseIndente);
         } elseif (is_string($this->baseIndente) && isset(static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente])) {
             $base_indente   = str_repeat(static::INDENTE_CHAR, static::$INDENTE_BASE_LENGTH_MAP[$this->baseIndente]);
         } else {
-            $base_indente   = str_repeat(static::INDENTE_CHAR, $this->indenteLevel * $this->tabWidth);
+            $base_indente   = str_repeat(static::INDENTE_CHAR, $this->indentLevel * $this->tabWidth);
         }
 
         foreach ($this->header as $idx => $cell) {
