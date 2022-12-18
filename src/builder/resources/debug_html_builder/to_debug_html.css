@@ -3,6 +3,7 @@
     font-family: monospace;
     font-size: 12px;
     margin: 0.5rem;
+    white-space: normal;
 }
 
 .debug-html * {
